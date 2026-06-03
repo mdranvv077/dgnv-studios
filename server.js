@@ -1,9 +1,13 @@
+require('dotenv').config(); // 1. Carga las variables del archivo .env al arrancar
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const geoip = require('geoip-lite');
 const app = express();
-const PORT = 80;
+
+// 2. Lee el puerto desde .env o usa el 80 por defecto si no lo encuentra
+const PORT = process.env.PORT || 80; 
 const HOST = 'localhost';
 
 app.use(express.json());
@@ -44,14 +48,10 @@ app.use((req, res, next) => {
     const esRecurso = req.url.includes('.css') || req.url.includes('.js') || req.url.includes('/img/');
 
     // --- BLOQUEO DE SEGURIDAD ---
-    // Si intentan entrar a Modalidades o al Menu directamente por URL
     const esRutaPrivada = req.url.includes('/Modalidades/') || req.url.includes('menu.html');
     
     if (esRutaPrivada) {
-        // Logueamos el intento sospechoso
         logger(`INTENTO DE ACCESO NO AUTORIZADO A: ${req.url}`, req);
-        // Podrías dejar que el JS del cliente haga el redirect, 
-        // pero aquí reforzamos enviándolos al login si no vienen de una página interna
         const referer = req.headers.referer || '';
         if (!referer.includes(HOST) && !referer.includes('ngrok-free.dev')) {
             return res.redirect('/main.html');
@@ -105,11 +105,12 @@ app.post('/api/comentarios', (req, res) => {
     }
 });
 
-// 3. Ruta de Login
+// 3. Ruta de Login (¡PROTEGIDA!)
 app.post('/api/login', (req, res) => {
     const { user, password } = req.body;
 
-    if (user === 'admin' && password === 'epic456#') {
+    // 3. Valida comparando contra las variables secretas de tu archivo .env
+    if (user === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
         logger(`LOGIN EXITOSO | Usuario: "${user}"`, req);
         res.json({ success: true });
     } else {
