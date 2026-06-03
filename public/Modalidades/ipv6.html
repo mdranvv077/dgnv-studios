@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv6 Lab — DGNV Studios</title>
+    <link rel="icon" type="image/png" href="../img/webfav.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-main: #ff7b00;
+            --orange-soft: rgba(255, 123, 0, 0.1);
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --transition: all 0.25s ease;
+            --font-pixel: 'Press Start 2P', cursive;
+        }
+
+        body.dark {
+            --bg: #0a0c10;
+            --card: rgba(22, 27, 34, 0.8);
+            --text: #f0f6fc;
+            --text-dim: #8b949e;
+            --border: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(0, 0, 0, 0.3);
+        }
+
+        body.light {
+            --bg: #f6f8fa;
+            --card: rgba(255, 255, 255, 0.9);
+            --text: #1f2328;
+            --text-dim: #636c76;
+            --border: rgba(0, 0, 0, 0.1);
+            --input-bg: #ffffff;
+        }
+
+        body {
+            font-family: var(--font-pixel);
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            box-sizing: border-box;
+        }
+
+        .container { width: 100%; max-width: 1150px; flex: 1; position: relative; }
+
+        .top-nav {
+            position: absolute;
+            top: 10px;
+            right: 0;
+            z-index: 100;
+        }
+
+        .btn-theme {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+        .btn-theme:hover { border-color: var(--orange-main); color: var(--orange-main); }
+
+        .btn-back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: var(--orange-main);
+            font-size: 0.6rem;
+            transition: opacity 0.3s;
+        }
+        .btn-back:hover { opacity: 0.7; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+            width: 100%;
+        }
+
+        h2 { font-weight: 400; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
+        h2 span { color: var(--orange-main); }
+
+        .btn-action {
+            background: var(--orange-main);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-pixel);
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-action:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        .card {
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-main {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--orange-main);
+            padding: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            font-family: 'Roboto Mono', monospace;
+            width: 320px;
+            text-align: center;
+            outline: none;
+        }
+        .w-pref-v6 { width: 80px; }
+
+        .label-text { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 5px; }
+        
+        .correct { border-color: #238636 !important; background: rgba(35, 134, 54, 0.1) !important; color: #3fb950 !important; }
+        .incorrect { border-color: #da3633 !important; background: rgba(218, 54, 51, 0.1) !important; color: #f85149 !important; }
+
+        .v6-output-box {
+            width: 100%;
+            background: var(--input-bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 12px;
+            font-size: 0.9rem;
+            font-family: 'Roboto Mono', monospace;
+            box-sizing: border-box;
+            outline: none;
+            transition: var(--transition);
+        }
+        .v6-output-box:focus { border-color: var(--orange-main); }
+
+        .grid-v6-questions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .question-block {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+
+        .question-title {
+            font-size: 0.5rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            line-height: 1.4;
+        }
+
+        footer { padding: 20px; color: var(--text-dim); font-size: 0.5rem; text-align: center; text-transform: uppercase; }
+    </style>
+</head>
+<body class="dark" id="mainBody">
+
+    <div class="container">
+        <div class="top-nav">
+            <button class="btn-theme" onclick="toggleTheme()">
+                <span id="t-icon">🌙</span> <span id="t-text">Modo Oscuro</span>
+            </button>
+        </div>
+
+        <a href="../menu.html" class="btn-back">< REGRESAR</a>
+
+        <header class="header">
+            <h2>IPv6 | <span>LAB</span></h2>
+        </header>
+
+        <section class="card" style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+            <div class="label-text">PREFIJO / SUBRED IPv6 GLOBAL</div>
+            <div style="display: flex; gap: 10px; width: 100%; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="ipv6Input" class="input-main" placeholder="Ej: 2001:db8:acad::" value="2001:db8:abcd::">
+                <input type="number" id="prefixInput" class="input-main w-pref-v6" placeholder="48" value="48">
+                <button class="btn-action" onclick="generateIPv6Lab()">Generar</button>
+            </div>
+        </section>
+
+        <div id="labArea" style="display: none;">
+            <div class="card" style="text-align: center; padding: 15px;">
+                <div class="label-text">DIRECCIÓN IPv6 ASIGNADA PARA EL EJERCICIO</div> 
+                <div id="ipv6Display" style="color: var(--orange-main); font-weight: 800; font-family: 'Roboto Mono'; font-size: 1.1rem; margin-top: 5px; word-break: break-all;">---</div>
+            </div>
+
+            <div class="card">
+                <div class="label-text" style="text-align: center; margin-bottom: 15px;">DESAFÍO DE COMPRESIÓN Y SUBREDES</div>
+                
+                <div class="grid-v6-questions">
+                    <div class="question-block">
+                        <span class="question-title">01. Expande completamente la dirección IPv6 asignada (Completa todos los ceros):</span>
+                        <input type="text" id="ans_expanded" class="v6-output-box" placeholder="0000:0000:...:0000">
+                    </div>
+
+                    <div class="question-block">
+                        <span class="question-title">02. Comprime la siguiente IPv6 al máximo omitiendo grupos de ceros: <br><span id="compressTarget" style="color:var(--orange-main); font-family:'Roboto Mono'; font-size:0.8rem;"></span></span>
+                        <input type="text" id="ans_compressed" class="v6-output-box" placeholder="Ej: 2001:db8::1">
+                    </div>
+
+                    <div class="question-block">
+                        <span class="question-title">03. Si segmentamos usando un prefijo /64, ¿Cuál es el Network ID de la primera subred válida?</span>
+                        <input type="text" id="ans_subnet" class="v6-output-box" placeholder="Ej: 2001:db8:abcd:0000::/64">
+                    </div>
+                </div>
+
+                <button class="btn-action" style="width: 100%; margin-top: 30px; background: transparent; border: 1.5px solid var(--orange-main); color: var(--orange-main);" 
+                        onclick="verifyIPv6Answers()">
+                    Verificar Resultados
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer>© 2026 DGNV STUDIOS</footer>
+
+    <script>
+        const body = document.getElementById('mainBody');
+        function toggleTheme() {
+            const isDark = body.classList.contains('dark');
+            applyTheme(isDark ? 'light' : 'dark');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        }
+        function applyTheme(theme) {
+            const icon = document.getElementById('t-icon');
+            const text = document.getElementById('t-text');
+            if (theme === 'light') {
+                body.classList.replace('dark', 'light');
+                icon.innerText = '☀️'; text.innerText = 'Modo Claro';
+            } else {
+                body.classList.replace('light', 'dark');
+                icon.innerText = '🌙'; text.innerText = 'Modo Oscuro';
+            }
+        }
+        window.onload = () => applyTheme(localStorage.getItem('theme') || 'dark');
+
+        let solucionExpanded = "";
+        let solucionCompressed = "";
+        let solucionSubnet = "";
+
+        function generateIPv6Lab() {
+            let baseIP = document.getElementById('ipv6Input').value.trim();
+            let prefix = parseInt(document.getElementById('prefixInput').value) || 48;
+
+            if(!baseIP.includes(':') || prefix < 16 || prefix > 128) {
+                alert("Ingresa una IPv6 base válida y un prefijo válido.");
+                return;
+            }
+
+            let randomHex = Math.floor(Math.random()*65535).toString(16).padStart(4, '0');
+            let generatedIP = `2001:0db8:abcd:${randomHex}:0000:0000:0000:0001`;
+            
+            document.getElementById('ipv6Display').innerText = `${generatedIP} /${prefix}`;
+
+            solucionExpanded = "2001:0db8:abcd:" + randomHex + ":0000:0000:0000:0001";
+
+            let randomHex2 = Math.floor(Math.random()*65535).toString(16).padStart(4, '0');
+            let targetToCompress = `2001:0db8:0000:0000:${randomHex2}:0000:0000:00ff`;
+            document.getElementById('compressTarget').innerText = targetToCompress;
+            solucionCompressed = `2001:db8::${randomHex2}:0:0:ff`;
+
+            solucionSubnet = `2001:db8:abcd:${randomHex}::/64`;
+
+            document.getElementById('ans_expanded').value = "";
+            document.getElementById('ans_compressed').value = "";
+            document.getElementById('ans_subnet').value = "";
+            document.getElementById('ans_expanded').classList.remove('correct', 'incorrect');
+            document.getElementById('ans_compressed').classList.remove('correct', 'incorrect');
+            document.getElementById('ans_subnet').classList.remove('correct', 'incorrect');
+
+            document.getElementById('labArea').style.display = 'block';
+        }
+
+        function verifyIPv6Answers() {
+            const inExpanded = document.getElementById('ans_expanded');
+            const inCompressed = document.getElementById('ans_compressed');
+            const inSubnet = document.getElementById('ans_subnet');
+
+            const check = (el, sol) => {
+                el.classList.remove('correct', 'incorrect');
+                if(el.value.trim().toLowerCase() === sol.toLowerCase()) {
+                    el.classList.add('correct');
+                } else {
+                    el.classList.add('incorrect');
+                }
+            };
+
+            check(inExpanded, solucionExpanded);
+            check(inCompressed, solucionCompressed);
+            check(inSubnet, solucionSubnet);
+        }
+    </script>
+</body>
+</html>

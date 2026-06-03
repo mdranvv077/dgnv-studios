@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso — DGNV Studios</title>
+    <link rel="icon" type="image/png" href="./img/webfav.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-main: #ff7b00;
+            --orange-glow: rgba(255, 123, 0, 0.4);
+            --orange-soft: rgba(255, 123, 0, 0.1);
+            --font-pixel: 'Press Start 2P', cursive;
+            --transition-main: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-theme: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* --- VARIABLES POR TEMA --- */
+        body.dark {
+            --bg: #0a0c10;
+            --card: rgba(22, 27, 34, 0.8);
+            --text: #f0f6fc;
+            --border: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(0, 0, 0, 0.3);
+        }
+
+        body.light {
+            --bg: #f6f8fa;
+            --card: rgba(255, 255, 255, 0.9);
+            --text: #1f2328;
+            --border: rgba(0, 0, 0, 0.1);
+            --input-bg: rgba(255, 255, 255, 1);
+        }
+
+        body {
+            font-family: var(--font-pixel);
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: var(--transition-theme);
+        }
+
+        /* --- BOTÓN TEMA --- */
+        .theme-switch {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .theme-switch:hover {
+            border-color: var(--orange-main);
+            transform: scale(1.05);
+        }
+
+        /* --- TOOLTIP --- */
+        #customTooltip {
+            position: fixed;
+            background: var(--card);
+            color: var(--text);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.6rem;
+            border: 1.5px solid var(--orange-main);
+            opacity: 0;
+            z-index: 10001;
+            pointer-events: none;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 0.2s;
+            backdrop-filter: blur(5px);
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .main-container {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 50px;
+            width: 320px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-main);
+            backdrop-filter: blur(10px);
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .main-container:not(.expanded):not(.loading):hover {
+            animation: ledBreath 2s infinite ease-in-out;
+            border-color: var(--orange-main);
+        }
+
+        @keyframes ledBreath {
+            0%, 100% { box-shadow: 0 0 5px rgba(255,123,0,0.1), inset 0 0 2px rgba(255,123,0,0.1); }
+            50% { box-shadow: 0 0 20px rgba(255,123,0,0.4), inset 0 0 12px rgba(255,123,0,0.3); }
+        }
+
+        .main-container.expanded {
+            width: 400px;
+            height: 400px;
+            border-radius: 24px;
+            border-color: var(--orange-main);
+            cursor: default;
+            box-shadow: 0 0 30px var(--orange-glow), inset 0 0 15px var(--orange-glow);
+            padding: 40px 20px;
+            box-sizing: border-box;
+            display: block;
+        }
+
+        .main-container.loading {
+            width: 420px;
+            height: 140px;
+            border-radius: 15px;
+            border-color: var(--orange-main);
+            box-shadow: 0 0 40px var(--orange-glow), inset 0 0 20px var(--orange-glow);
+            display: flex;
+        }
+
+        .content-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #mainTitle {
+            font-size: 0.7rem;
+            color: var(--orange-main);
+            margin: 0;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), font-size 0.5s;
+            text-align: center;
+            white-space: nowrap;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .expanded #mainTitle {
+            top: 0%;
+            transform: translate(-50%, 40px);
+            font-size: 0.85rem;
+        }
+
+        .login-form {
+            width: 100%;
+            padding: 0 20px;
+            display: none; 
+            flex-direction: column;
+            gap: 15px;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.5s ease 0.3s;
+            margin-top: 100px;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-size: 0.45rem; color: var(--orange-main); text-transform: uppercase; }
+        .input-group input {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text);
+            font-family: 'Roboto Mono', monospace;
+            outline: none;
+            transition: border-color 0.3s;
+            font-size: 16px;
+        }
+        .input-group input:focus { border-color: var(--orange-main); }
+
+        .btn-submit {
+            background: var(--orange-main);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: var(--font-pixel);
+            font-size: 0.55rem;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        .btn-submit:hover { transform: scale(1.02); }
+
+        /* --- CARGA --- */
+        .loading-content {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .loading-text {
+            color: var(--orange-main);
+            font-size: 0.75rem;
+            margin-bottom: 20px;
+        }
+
+        .scan-line {
+            width: 250px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-bar {
+            position: absolute;
+            width: 80px;
+            height: 100%;
+            background: var(--orange-main);
+            left: -80px;
+            animation: scanMove 1.5s infinite linear;
+            box-shadow: 0 0 10px var(--orange-main);
+        }
+
+        @keyframes scanMove { 0% { left: -80px; } 100% { left: 250px; } }
+
+        .dots::after { content: ''; animation: dotAnim 1.5s infinite; }
+        @keyframes dotAnim { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+
+        .error-msg { color: #ff4444; font-size: 0.4rem; text-align: center; margin-top: 10px; display: none; }
+
+        @media (max-width: 768px) {
+            .main-container { width: 280px; }
+            .main-container.expanded { width: 90%; max-width: 350px; height: 420px; padding: 40px 15px; }
+            .main-container.loading { width: 90%; max-width: 380px; }
+            #mainTitle { font-size: 0.6rem; }
+            .expanded #mainTitle { font-size: 0.75rem; }
+            .btn-submit { font-size: 0.5rem; padding: 18px; }
+            .theme-switch { top: 15px; right: 15px; padding: 8px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body class="dark" id="mainBody">
+
+    <button class="theme-switch" onclick="toggleTheme()">
+        <span id="theme-icon">🌙</span> <span id="theme-text">Modo Oscuro</span>
+    </button>
+
+    <div id="customTooltip"></div>
+
+    <div class="main-container" id="box" onclick="expand()">
+        <div class="content-wrapper" id="contentWrapper">
+            <div id="mainTitle">Iniciar Sesión</div>
+            <form class="login-form" id="authForm" novalidate onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label>Usuario</label>
+                    <input type="text" id="userInput" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="passInput">
+                </div>
+                <button type="submit" class="btn-submit">Entrar al Sistema</button>
+                <div class="error-msg" id="errorMsg">ERROR: CREDENCIALES INVÁLIDAS</div>
+            </form>
+
+            <div class="loading-content" id="loadingContent">
+                <div class="loading-text">Iniciando sesión<span class="dots"></span></div>
+                <div class="scan-line"><div class="scan-bar"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const body = document.getElementById('mainBody');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        const box = document.getElementById('box');
+        const tooltip = document.getElementById('customTooltip');
+
+        // --- LÓGICA DE TEMA ---
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            applyTheme(savedTheme);
+        };
+
+        function toggleTheme() {
+            const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                body.classList.replace('dark', 'light');
+                themeIcon.innerText = '☀️';
+                themeText.innerText = 'Modo Claro';
+            } else {
+                body.classList.replace('light', 'dark');
+                themeIcon.innerText = '🌙';
+                themeText.innerText = 'Modo Oscuro';
+            }
+        }
+
+        // --- LÓGICA DE INTERFAZ ---
+        document.addEventListener('mousemove', (e) => {
+            if (tooltip.style.opacity === "1") {
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            }
+        });
+
+        function showTip(text) {
+            tooltip.innerText = text;
+            tooltip.style.opacity = "1";
+            setTimeout(() => tooltip.style.opacity = "0", 2500);
+        }
+
+        function expand() {
+            if (!box.classList.contains('expanded') && !box.classList.contains('loading')) {
+                box.classList.add('expanded');
+                const form = document.getElementById('authForm');
+                setTimeout(() => {
+                    form.style.display = 'flex';
+                    setTimeout(() => form.style.opacity = "1", 50);
+                }, 100);
+            }
+        }
+
+        // --- CONEXIÓN CON EL SERVIDOR ---
+        async function handleLogin(event) {
+            event.preventDefault();
+            const user = document.getElementById('userInput').value.trim();
+            const password = document.getElementById('passInput').value.trim();
+
+            if (!user || !password) {
+                showTip("⚠️ Completa los campos.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('isLogged', 'true');
+                    
+                    document.getElementById('authForm').style.opacity = "0";
+                    document.getElementById('mainTitle').style.opacity = "0";
+                    
+                    setTimeout(() => {
+                        document.getElementById('authForm').style.display = "none";
+                        document.getElementById('mainTitle').style.display = "none";
+                        box.classList.remove('expanded');
+                        box.classList.add('loading');
+                        
+                        const loadContent = document.getElementById('loadingContent');
+                        loadContent.style.display = "flex";
+                        setTimeout(() => loadContent.style.opacity = "1", 50);
+
+                        setTimeout(() => {
+                            window.location.replace('menu.html');
+                        }, 2500);
+                    }, 500);
+                } else {
+                    const error = document.getElementById('errorMsg');
+                    error.style.display = 'block';
+                    box.style.borderColor = '#ff4444';
+                    setTimeout(() => {
+                        box.style.borderColor = 'var(--orange-main)';
+                    }, 1000);
+                }
+            } catch (err) {
+                showTip("❌ Error de conexión con el servidor.");
+            }
+        }
+
+        document.getElementById('authForm').onclick = (e) => e.stopPropagation();
+    </script>
+</body>
+</html>

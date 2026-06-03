@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comentarios — DGNV Studios</title>
+    <link rel="icon" type="image/png" href="../../img/webfav.png">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-main: #ff7b00;
+            --bg: #0a0c10;
+            --card: rgba(22, 27, 34, 0.8);
+            --border: rgba(255, 255, 255, 0.12);
+            --text: #f0f6fc;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Roboto Mono', monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- BOTÓN REGRESAR --- */
+        .btn-back {
+            position: self;
+            align-self: flex-start;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: var(--orange-main);
+            font-size: 0.7rem;
+            font-family: 'Press Start 2P';
+            transition: opacity 0.3s;
+        }
+        .btn-back:hover { opacity: 0.7; }
+
+        .container {
+            width: 100%;
+            max-width: 800px; /* Más ancho */
+            margin-top: 20px;
+        }
+
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2rem; /* Más grande */
+            color: var(--orange-main);
+            text-align: center;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            line-height: 1.5;
+        }
+
+        /* --- FORMULARIO --- */
+        .input-section {
+            background: var(--card);
+            border: 2px solid var(--border);
+            padding: 30px; /* Más espacio */
+            border-radius: 18px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        input, textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-family: 'Roboto Mono', monospace;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            font-size: 1.1rem; /* Texto más grande */
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--orange-main);
+            outline: none;
+        }
+
+        button {
+            background: var(--orange-main);
+            color: white;
+            border: none;
+            padding: 18px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem; /* Más grande */
+            cursor: pointer;
+            width: 100%;
+            border-radius: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0px #b35600;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* --- LISTA DE COMENTARIOS --- */
+        .feed {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 50px;
+        }
+
+        .post {
+            background: var(--card);
+            border-left: 6px solid var(--orange-main); /* Borde más grueso */
+            padding: 25px;
+            border-radius: 8px;
+            animation: fadeIn 0.5s ease-out;
+            backdrop-filter: blur(5px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user { 
+            color: var(--orange-main); 
+            font-weight: bold; 
+            font-size: 1.1rem; 
+        }
+
+        .flag {
+            width: 24px; /* Bandera más grande */
+            height: auto;
+            border-radius: 3px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .date { 
+            color: #8b949e; 
+            font-size: 0.75rem; 
+        }
+
+        .content { 
+            font-size: 1.15rem; /* Contenido más grande */
+            line-height: 1.6; 
+            color: #e6edf3; 
+            word-wrap: break-word;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            h2 { font-size: 0.9rem; }
+            .input-section { padding: 20px; }
+            .post { padding: 18px; }
+            .user { font-size: 1rem; }
+            .content { font-size: 1rem; }
+            .btn-back { font-size: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="../../menu.html" class="btn-back">< REGRESAR</a>
+        
+        <h2>> FORO_COMUNITARIO_DGNV</h2>
+
+        <div class="input-section">
+            <input type="text" id="username" placeholder="Tu Alias (Auto-guardado)" maxlength="15">
+            <textarea id="commentText" rows="4" placeholder="Escribe tu mensaje aquí..." maxlength="250"></textarea>
+            <button onclick="postComment()">ENVIAR AL SISTEMA</button>
+        </div>
+
+        <div id="feed" class="feed">
+            </div>
+    </div>
+
+    <script>
+        window.onload = () => {
+            const savedUser = localStorage.getItem('dgnv_username');
+            if (savedUser) {
+                document.getElementById('username').value = savedUser;
+            }
+            loadComments();
+            // Auto-refresh cada 30 segundos para ver nuevos comentarios
+            setInterval(loadComments, 30000);
+        };
+
+        async function loadComments() {
+            try {
+                const res = await fetch('/api/comentarios');
+                const comments = await res.json();
+                const feed = document.getElementById('feed');
+                
+                if (comments.length === 0) {
+                    feed.innerHTML = "<p style='text-align:center; color:gray;'>No hay mensajes aún. ¡Sé el primero!</p>";
+                    return;
+                }
+
+                feed.innerHTML = comments.reverse().map(c => `
+                    <div class="post">
+                        <div class="post-header">
+                            <div class="user-info">
+                                <span class="user">${c.usuario}</span>
+                                <img src="https://flagcdn.com/w40/${c.pais}.png" 
+                                     class="flag" 
+                                     alt="Pais: ${c.pais}">
+                            </div>
+                            <span class="date">${c.fecha}</span>
+                        </div>
+                        <div class="content">${c.texto}</div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Error al sincronizar con el foro");
+            }
+        }
+
+        async function postComment() {
+            const usuario = document.getElementById('username').value.trim();
+            const texto = document.getElementById('commentText').value.trim();
+
+            if (!usuario || !texto) {
+                alert("SISTEMA: Error. Campos incompletos.");
+                return;
+            }
+
+            localStorage.setItem('dgnv_username', usuario);
+
+            try {
+                const response = await fetch('/api/comentarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, texto })
+                });
+
+                if (response.ok) {
+                    document.getElementById('commentText').value = '';
+                    loadComments();
+                }
+            } catch (err) {
+                alert("SISTEMA: Error de enlace con el servidor.");
+            }
+        }
+    </script>
+</body>
+</html>

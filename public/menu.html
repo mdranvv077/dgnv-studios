@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal — DGNV Studios</title>
+    <link rel="icon" type="image/png" href="./img/webfav.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-main: #ff7b00;
+            --orange-soft: rgba(255, 123, 0, 0.1);
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --font-pixel: 'Press Start 2P', cursive;
+            --transition-main: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-theme: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        body.dark {
+            --bg: #0a0c10;
+            --card: rgba(22, 27, 34, 0.8);
+            --text: #f0f6fc;
+            --text-dim: rgba(139, 148, 158, 0.4);
+            --border: rgba(255, 255, 255, 0.12);
+            --tip-bg: rgba(0, 0, 0, 0.7);
+            --modal-overlay: rgba(0, 0, 0, 0.8);
+        }
+
+        body.light {
+            --bg: #f6f8fa;
+            --card: rgba(255, 255, 255, 0.9);
+            --text: #1f2328;
+            --text-dim: rgba(31, 35, 40, 0.4);
+            --border: rgba(0, 0, 0, 0.1);
+            --tip-bg: rgba(255, 255, 255, 0.9);
+            --modal-overlay: rgba(255, 255, 255, 0.6);
+        }
+
+        body {
+            font-family: var(--font-pixel);
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: var(--transition-theme);
+            opacity: 0; 
+        }
+
+        /* --- NAVEGACIÓN SUPERIOR --- */
+        .top-nav {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            left: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .theme-switch {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 15px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout {
+            background: var(--card);
+            border: 1px solid var(--border);
+            height: 42px;
+            min-width: 42px;
+            max-width: 42px;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            padding: 0 10px;
+        }
+
+        .btn-logout svg { width: 24px; height: 24px; fill: var(--orange-main); flex-shrink: 0; }
+        .logout-text { font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--orange-main); text-transform: uppercase; white-space: nowrap; opacity: 0; max-width: 0; transition: opacity 0.3s ease, max-width 0.5s ease; }
+        .btn-logout:hover { max-width: 200px; border-color: var(--orange-main); padding: 0 18px; gap: 10px; }
+        .btn-logout:hover .logout-text { opacity: 1; max-width: 150px; }
+
+        /* --- RECUADRO PRINCIPAL --- */
+        .header { position: absolute; top: 60px; text-align: center; width: 100%; transition: top 0.4s ease; }
+        h2 { font-weight: 400; font-size: 1.8rem; text-transform: uppercase; margin: 0; }
+        h2 span { color: var(--orange-main); }
+
+        .main-box {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 50px;
+            width: 320px;
+            height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: var(--transition-main);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-box:hover {
+            width: 550px; 
+            height: 680px; /* Aumentado para contener cómodamente la 4ta opción */
+            border-radius: var(--radius-lg);
+            border-color: var(--orange-main);
+            box-shadow: 0 0 40px var(--orange-soft);
+        }
+
+        .title-pixel {
+            font-size: 0.85rem;
+            color: var(--orange-main);
+            text-transform: uppercase;
+            position: absolute;
+            top: 24px;
+            transform: translateY(-50%);
+            transition: var(--transition-main);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .main-box:hover .title-pixel {
+            top: 50px;
+            transform: translateY(0);
+            font-size: 1.2rem;
+        }
+
+        .options-list {
+            opacity: 0;
+            visibility: hidden;
+            width: 100%;
+            padding: 0 40px; 
+            margin-top: 110px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Reducido levemente para mejorar la distribución */
+            transition: opacity 0.6s ease 0.5s;
+            box-sizing: border-box;
+        }
+
+        .main-box:hover .options-list { opacity: 1; visibility: visible; }
+
+        .mod-container { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+        .modalidad-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px 25px;
+            width: 100%;
+            box-sizing: border-box;
+            color: var(--text);
+            font-size: 0.65rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .modalidad-item:hover {
+            border-color: var(--orange-main);
+            background: var(--orange-soft);
+            transform: translateY(-2px);
+        }
+
+        .tip-box {
+            width: 100%;
+            max-height: 0;
+            opacity: 0;
+            background: var(--tip-bg); 
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            margin-top: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+        }
+
+        .tip-content { padding: 12px 15px; font-family: 'Roboto Mono', monospace; color: var(--text-dim); font-size: 0.65rem; line-height: 1.5; text-transform: uppercase; }
+
+        .mod-container:hover .tip-box {
+            max-height: 150px;
+            opacity: 1;
+            margin-top: 10px;
+            border-color: var(--orange-main);
+            transition-delay: 0.2s;
+        }
+
+        .num-pixel { color: var(--orange-main); font-family: var(--font-pixel); }
+
+        /* --- LOADER Y MODALES --- */
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        @keyframes scan { 0% { left: -60px; } 100% { left: 200px; } }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-card { background: var(--card); border: 2px solid var(--orange-main); border-radius: var(--radius-md); padding: 30px; width: 320px; text-align: center; }
+
+        footer { position: absolute; bottom: 30px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .link-protocolo { font-family: var(--font-pixel); font-size: 0.45rem; color: var(--text-dim); text-decoration: none; transition: all 0.3s ease; opacity: 0.6; }
+        .link-protocolo:hover { color: var(--orange-main); opacity: 1; }
+        .copyright { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; }
+    </style>
+</head>
+<body class="dark" id="mainBody">
+
+    <div class="top-nav">
+        <button class="theme-switch" onclick="toggleTheme()">
+            <span id="theme-icon">🌙</span> <span id="theme-text">Modo Oscuro</span>
+        </button>
+        <button class="btn-logout" onclick="showLogoutModal()">
+            <span class="logout-text">Cerrar Sesión</span>
+            <svg viewBox="0 0 24 24"><path d="M16 13v-2H7V8l-5 4 5 4v-3h9zM20 3H9c-1.1 0-2 .9-2 2v4h2V5h11v14H9v-4H7v4c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="logoutModal">
+        <div class="modal-card">
+            <p style="font-size: 0.55rem; margin-bottom: 20px;">> ¿CONFIRMAR DESCONEXIÓN DEL SISTEMA DGNV?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="confirmLogout()" style="background: var(--orange-main); color: white; border: none; padding: 10px; cursor: pointer; font-family: var(--font-pixel); font-size: 0.4rem;">SÍ, SALIR</button>
+                <button onclick="closeLogoutModal()" style="background: transparent; color: var(--text); border: 1px solid var(--border); padding: 10px; cursor: pointer; font-family: var(--font-pixel); font-size: 0.4rem;">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loader">
+        <div style="text-align: center;">
+            <div class="loader-text" style="color: var(--orange-main); margin-bottom: 15px;">Iniciando Protocolo...</div>
+            <div style="width: 200px; height: 2px; background: rgba(255,255,255,0.1); position: relative; overflow: hidden;">
+                <div style="position: absolute; width: 60px; height: 100%; background: var(--orange-main); animation: scan 1.5s infinite linear;"></div>
+            </div>
+        </div>
+    </div>
+
+    <header class="header">
+        <h2>DGNV | <span>Studios</span></h2>
+    </header>
+
+    <div class="main-box">
+        <div class="title-pixel">Modalidades</div>
+        <div class="options-list">
+            
+            <div class="mod-container">
+                <div class="modalidad-item" onclick="abrirModulo('/Modalidades/vlsm.html')">
+                    Calculadora VLSM <span class="num-pixel">01</span>
+                </div>
+                <div class="tip-box">
+                    <div class="tip-content">> SISTEMA DE SEGMENTACIÓN IP ADAPTATIVO.</div>
+                </div>
+            </div>
+
+            <div class="mod-container">
+                <div class="modalidad-item" onclick="abrirModulo('/Modalidades/procesadores/procesadores.html')">
+                    Hardware Database <span class="num-pixel">02</span>
+                </div>
+                <div class="tip-box">
+                    <div class="tip-content">> FILTRO DE FAMILIAS, MODELOS Y GENERACIONES DE CPU INTEL.</div>
+                </div>
+            </div>
+
+            <div class="mod-container">
+                <div class="modalidad-item" onclick="abrirModulo('/Modalidades/comments/comments.html')">
+                    Foro Comunitario <span class="num-pixel">03</span>
+                </div>
+                <div class="tip-box">
+                    <div class="tip-content">> SISTEMA DE INTERACCIÓN GLOBAL DGNV.</div>
+                </div>
+            </div>
+
+            <div class="mod-container">
+                <div class="modalidad-item" onclick="abrirModulo('/Modalidades/ipv6.html')">
+                    IPv6 Lab <span class="num-pixel">04</span>
+                </div>
+                <div class="tip-box">
+                    <div class="tip-content">> DESAFÍOS DE COMPRESIÓN, EXPANSIÓN Y SUBREDES EN DIRECCIONAMIENTO IPv6.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <a href="terms.html" class="link-protocolo">[ TÉRMINOS Y CONDICIONES ]</a>
+        <div class="copyright">© 2026 DGNV STUDIOS</div>
+    </footer>
+
+    <script>
+        // Verificación de sesión
+        if (localStorage.getItem('isLogged') !== 'true') window.location.replace('/main.html'); 
+        else document.getElementById('mainBody').style.opacity = '1';
+
+        // Modales
+        const modal = document.getElementById('logoutModal');
+        function showLogoutModal() { modal.style.display = 'flex'; setTimeout(() => modal.style.opacity = '1', 10); }
+        function closeLogoutModal() { modal.style.opacity = '0'; setTimeout(() => modal.style.display = 'none', 300); }
+        function confirmLogout() { localStorage.removeItem('isLogged'); window.location.replace('/main.html'); }
+
+        // Navegación con loader
+        function abrirModulo(url) {
+            document.getElementById('loader').style.display = 'flex';
+            setTimeout(() => { window.location.href = url; }, 1500);
+        }
+
+        // Tema
+        const body = document.getElementById('mainBody');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+        window.onload = () => { applyTheme(localStorage.getItem('theme') || 'dark'); };
+        function toggleTheme() {
+            const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                body.classList.replace('dark', 'light');
+                themeIcon.innerText = '☀️'; themeText.innerText = 'Modo Claro';
+            } else {
+                body.classList.replace('light', 'dark');
+                themeIcon.innerText = '🌙'; themeText.innerText = 'Modo Oscuro';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLSM Lab — DGNV Studios</title>
+    <link rel="icon" type="image/png" href="../img/webfav.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-main: #ff7b00;
+            --orange-soft: rgba(255, 123, 0, 0.1);
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --transition: all 0.25s ease;
+            --font-pixel: 'Press Start 2P', cursive;
+        }
+
+        body.dark {
+            --bg: #0a0c10;
+            --card: rgba(22, 27, 34, 0.8);
+            --text: #f0f6fc;
+            --text-dim: #8b949e;
+            --border: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --tooltip-bg: rgba(22, 27, 34, 0.98);
+        }
+
+        body.light {
+            --bg: #f6f8fa;
+            --card: rgba(255, 255, 255, 0.9);
+            --text: #1f2328;
+            --text-dim: #636c76;
+            --border: rgba(0, 0, 0, 0.1);
+            --input-bg: #ffffff;
+            --tooltip-bg: rgba(255, 255, 255, 0.98);
+        }
+
+        body {
+            font-family: var(--font-pixel);
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            opacity: 0;
+            box-sizing: border-box;
+        }
+
+        .container { width: 100%; max-width: 1150px; flex: 1; position: relative; }
+
+        .top-nav {
+            position: absolute;
+            top: 10px;
+            right: 0;
+            z-index: 100;
+        }
+
+        .btn-theme {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: var(--orange-main);
+            font-size: 0.6rem;
+            transition: opacity 0.3s;
+        }
+        .btn-back:hover { opacity: 0.7; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+            width: 100%;
+        }
+
+        h2 { font-weight: 400; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
+        h2 span { color: var(--orange-main); }
+
+        .btn-action {
+            background: var(--orange-main);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-pixel);
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .table-container { 
+            overflow-x: auto; 
+            margin-top: 10px; 
+            padding-bottom: 15px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; min-width: 950px; }
+        th { 
+            color: var(--text-dim); 
+            font-size: 0.5rem; 
+            text-transform: uppercase; 
+            padding: 10px; 
+            text-align: center; 
+        }
+        td { padding: 0 4px; text-align: center; }
+
+        .cell-input {
+            background: var(--input-bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 8px 0;
+            font-weight: 600;
+            text-align: center;
+            font-size: 0.8rem;
+            font-family: 'Roboto Mono', monospace; 
+            transition: var(--transition);
+            outline: none;
+            width: 100%;
+        }
+
+        .w-ip { width: 120px; }
+        .w-pref { width: 45px; }
+        .w-mask { width: 130px; }
+
+        .cell-input:focus { border-color: var(--orange-main); box-shadow: 0 0 8px var(--orange-soft); }
+
+        .card {
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-main {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--orange-main);
+            padding: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Roboto Mono', monospace;
+            width: 80px;
+            text-align: center;
+            outline: none;
+        }
+
+        /* --- ESTILOS LLAVE INGLESA Y MANUAL IP --- */
+        .manual-ip-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            max-width: 46px; 
+        }
+
+        .manual-ip-container.active {
+            max-width: 300px; 
+        }
+
+        .btn-key {
+            min-width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 2px solid var(--orange-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .btn-key svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--orange-main);
+            transition: all 0.3s ease;
+        }
+
+        .btn-key:hover {
+            background: var(--orange-main);
+        }
+
+        .btn-key:hover svg {
+            fill: var(--bg); 
+        }
+
+        .input-manual-ip {
+            width: 0;
+            opacity: 0;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--orange-main);
+            padding: 10px 0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            transition: all 0.5s ease;
+            outline: none;
+            text-align: center;
+        }
+
+        .manual-ip-container.active .input-manual-ip {
+            width: 180px;
+            opacity: 1;
+            padding: 10px;
+            margin-left: 5px;
+        }
+
+        .label-text { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; }
+        .correct { border-color: #238636 !important; background: rgba(35, 134, 54, 0.1) !important; color: #3fb950 !important; }
+        .incorrect { border-color: #da3633 !important; background: rgba(218, 54, 51, 0.1) !important; color: #f85149 !important; }
+
+        #customModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 10000;
+        }
+
+        .modal-content {
+            background: var(--card); border: 2px solid var(--orange-main);
+            padding: 25px; border-radius: var(--radius-lg); text-align: center;
+            max-width: 320px; color: var(--text);
+        }
+
+        footer { padding: 20px; color: var(--text-dim); font-size: 0.5rem; text-align: center; text-transform: uppercase; }
+
+        @media (min-width: 769px) {
+            h2 { font-size: 1rem; }
+            #t-text { display: none; }
+            .table-tip-mobile { display: none !important; }
+            .top-nav { top: 0; }
+            .card { padding: 15px; }
+            .btn-action { width: 100%; padding: 15px; }
+            .manual-ip-container.active { max-width: 100%; }
+            .manual-ip-container.active .input-manual-ip { width: 150px; }
+        }
+
+        /* CALCULADORA STYLE */
+        #calc-widget {
+            position: fixed; bottom: 30px; left: 30px; z-index: 1000;
+            background: var(--card); border: 2px solid var(--orange-main);
+            backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            cursor: pointer; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        #calc-widget.modo-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #calc-widget.modo-btn:hover { transform: scale(1.1) rotate(-5deg); background: var(--orange-main); }
+        #calc-widget.modo-exp { width: 250px; height: 320px; border-radius: 15px; padding: 15px; cursor: default; }
+        #calc-full-content, #calc-icon-content { transition: opacity 0.3s ease; }
+        #calc-widget.modo-btn #calc-full-content { opacity: 0; pointer-events: none; display: none; }
+        #calc-widget.modo-exp #calc-icon-content { opacity: 0; pointer-events: none; display: none; }
+        #calc-widget.modo-exp #calc-full-content { opacity: 1; display: block; }
+        #calc-widget.modo-btn #calc-icon-content { opacity: 1; display: flex; }
+        #calc-icon-content svg { width: 30px; height: 30px; stroke: var(--orange-main); transition: stroke 0.3s; }
+        #calc-widget.modo-btn:hover svg { stroke: white; }
+        .calc-header { font-family: var(--font-pixel); font-size: 0.6rem; color: var(--orange-main); margin-bottom: 12px; display: flex; justify-content: space-between; text-transform: uppercase; }
+        .calc-close { cursor: pointer; user-select: none; transition: color 0.2s; }
+        .calc-close:hover { color: #ff4444; }
+        #calc-display-input { width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: var(--orange-main); padding: 12px; text-align: right; font-family: 'Roboto Mono', monospace; font-size: 1.2rem; margin-bottom: 10px; border-radius: 8px; box-sizing: border-box; outline: none; }
+        .calc-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .calc-buttons button { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); padding: 12px 5px; font-family: var(--font-pixel); font-size: 0.6rem; cursor: pointer; border-radius: 6px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .calc-buttons button:hover { background: var(--orange-soft); border-color: var(--orange-main); }
+        .btn-op { color: var(--orange-main) !important; }
+        .btn-math { font-size: 0.9rem !important; }
+        .btn-pow sup { font-size: 0.4rem; vertical-align: super; margin-top: -4px; }
+        .btn-clear { color: #ff4444 !important; }
+        .btn-equal { background: var(--orange-main) !important; color: white !important; border: none !important; margin-top: 5px; }
+    </style>
+</head>
+<body class="dark" id="mainBody">
+
+    <div id="customModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0; font-size: 0.7rem;">⚠️ ALERTA LOGICA</h3>
+            <p id="modalMessage" style="font-size: 0.55rem; line-height: 1.5;">Máscara fuera de rango.</p>
+            <button class="btn-action" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="top-nav">
+            <button class="btn-theme" onclick="toggleTheme()">
+                <span id="t-icon">🌙</span> <span id="t-text">Modo Oscuro</span>
+            </button>
+        </div>
+
+        <a href="../../menu.html" class="btn-back">< REGRESAR</a>
+
+        <header class="header">
+            <h2>VLSM | <span>LAB</span></h2>
+        </header>
+
+        <section class="card" style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+            <div class="label-text">MÁSCARA CIDR INICIAL</div>
+            <div style="display: flex; gap: 10px; width: 100%; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <input type="number" id="maskInput" class="input-main" placeholder="24">
+                
+                <div class="manual-ip-container" id="manualIpCont">
+                    <div class="btn-key" onclick="toggleManualIp()" title="Ingresar IP Manual">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M384 64L224 64C206.3 64 192 78.3 192 96C192 113.7 206.3 128 224 128L224 279.5L103.5 490.3C98.6 499 96 508.7 96 518.7C96 550.4 121.6 576 153.3 576L486.7 576C518.3 576 544 550.4 544 518.7C544 508.7 541.4 498.9 536.5 490.3L416 279.5L416 128C433.7 128 448 113.7 448 96C448 78.3 433.7 64 416 64L384 64zM288 279.5L288 128L352 128L352 279.5C352 290.6 354.9 301.6 360.4 311.3L402 384L238 384L279.6 311.3C285.1 301.6 288 290.7 288 279.5z"/></svg>
+                    </div>
+                    <input type="text" id="manualIpInput" class="input-manual-ip" placeholder="Ej: 10.0.0.0">
+                </div>
+
+                <button class="btn-action" onclick="generateLab()" style="flex: 1; max-width: 200px;">Generar</button>
+            </div>
+
+            <div class="label-text" style="margin-top: 10px;">HOSTS POR LAN / WAN (OPCIONAL)</div>
+            <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; width: 100%;">
+                <div id="hostsContainer" style="display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                    <input type="number" class="input-main host-field" placeholder="LAN 1" style="width: 75px; font-size: 0.75rem; padding: 8px 5px; height: 38px; border-radius: 8px;">
+                    <input type="number" class="input-main host-field" placeholder="LAN 2" style="width: 75px; font-size: 0.75rem; padding: 8px 5px; height: 38px; border-radius: 8px;">
+                    <input type="number" class="input-main host-field" placeholder="LAN 3" style="width: 75px; font-size: 0.75rem; padding: 8px 5px; height: 38px; border-radius: 8px;">
+                    <input type="number" class="input-main host-field" placeholder="LAN 4" style="width: 75px; font-size: 0.75rem; padding: 8px 5px; height: 38px; border-radius: 8px;">
+                </div>
+                <button class="btn-key" onclick="addHostInput()" title="Agregar Red Extra" style="min-width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width: 14px; height: 14px;"><path d="M256 80c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 152L56 232c-13.3 0-24 10.7-24 24s10.7 24 24 24l152 0 0 152c0 13.3 10.7 24 24 24s24-10.7 24-24l0-152 152 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-152 0 0-152z"/></svg>
+                </button>
+            </div>
+        </section>
+
+        <div id="labArea" style="display: none;">
+            <div class="card" style="text-align: center; padding: 15px;">
+                <div class="label-text">DIRECCIÓN IP ASIGNADA</div> 
+                <div id="ipDisplay" style="color: var(--orange-main); font-weight: 800; font-family: 'Roboto Mono'; font-size: 1.2rem; margin-top: 5px;">---</div>
+            </div>
+
+            <div class="card">
+                <div class="table-tip-mobile">Desliza para ver la tabla -></div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subred</th>
+                                <th>Hosts</th>
+                                <th>Network ID</th>
+                                <th>/</th>
+                                <th>Máscara</th>
+                                <th>First IP</th>
+                                <th>Last IP</th>
+                                <th>Broadcast</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableContent"></tbody>
+                    </table>
+                </div>
+                <button class="btn-action" style="width: 100%; margin-top: 20px; background: transparent; border: 1.5px solid var(--orange-main); color: var(--orange-main);" 
+                        onclick="verifyAnswers()">
+                    Verificar Resultados
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="calc-widget" class="modo-btn" onclick="toggleCalc(event)">
+        <div id="calc-icon-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                <line x1="8" y1="6" x2="16" y2="6"></line>
+                <line x1="8" y1="10" x2="16" y2="10"></line>
+                <line x1="8" y1="14" x2="10" y2="14"></line>
+                <line x1="14" y1="14" x2="16" y2="14"></line>
+                <line x1="8" y1="18" x2="10" y2="18"></line>
+                <line x1="14" y1="18" x2="16" y2="18"></line>
+            </svg>
+        </div>
+        <div id="calc-full-content">
+            <div class="calc-header">
+                <span>DGNV_CALC_V2</span>
+                <span class="calc-close" onclick="toggleCalc(event)">[X]</span>
+            </div>
+            <input type="text" id="calc-display-input" placeholder="2^8" readonly>
+            <div class="calc-buttons">
+                <button onclick="actionCalc(event, '7')">7</button>
+                <button onclick="actionCalc(event, '8')">8</button>
+                <button onclick="actionCalc(event, '9')">9</button>
+                <button onclick="actionCalc(event, '/')" class="btn-op btn-math">÷</button>
+                <button onclick="actionCalc(event, '4')">4</button>
+                <button onclick="actionCalc(event, '5')">5</button>
+                <button onclick="actionCalc(event, '6')">6</button>
+                <button onclick="actionCalc(event, '*')" class="btn-op btn-math">×</button>
+                <button onclick="actionCalc(event, '1')">1</button>
+                <button onclick="actionCalc(event, '2')">2</button>
+                <button onclick="actionCalc(event, '3')">3</button>
+                <button onclick="actionCalc(event, '-')" class="btn-op">-</button>
+                <button onclick="actionCalc(event, '0')">0</button>
+                <button onclick="actionCalc(event, '^')" class="btn-op btn-pow">x<sup>y</sup></button>
+                <button onclick="actionCalc(event, '+')" class="btn-op">+</button>
+                <button onclick="actionCalc(event, 'C')" class="btn-clear">C</button>
+                <button onclick="actionCalc(event, '=')" class="btn-equal" style="grid-column: span 4;">=</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>© 2026 DGNV STUDIOS</footer>
+
+    <script>
+        // Lógica de Protección de Sesión
+        (function() {
+            if (localStorage.getItem('isLogged') !== 'true') {
+                window.location.replace('/main.html'); 
+            } else {
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.getElementById('mainBody').style.opacity = '1';
+                });
+            }
+        })();
+
+        // Tema
+        const body = document.getElementById('mainBody');
+        function toggleTheme() {
+            const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+        function applyTheme(theme) {
+            const icon = document.getElementById('t-icon');
+            const text = document.getElementById('t-text');
+            if (theme === 'light') {
+                body.classList.replace('dark', 'light');
+                if(icon) icon.innerText = '☀️'; if(text) text.innerText = 'Modo Claro';
+            } else {
+                body.classList.replace('light', 'dark');
+                if(icon) icon.innerText = '🌙'; if(text) text.innerText = 'Modo Oscuro';
+            }
+        }
+        window.onload = () => applyTheme(localStorage.getItem('theme') || 'dark');
+
+        // LÓGICA MANUAL IP
+        function toggleManualIp() {
+            document.getElementById('manualIpCont').classList.toggle('active');
+        }
+
+        // AGREGAR INPUT DE HOST DINÁMICO
+        function addHostInput() {
+            const container = document.getElementById('hostsContainer');
+            const currentFields = container.getElementsByClassName('host-field').length;
+            
+            const newInput = document.createElement('input');
+            newInput.type = 'number';
+            newInput.className = 'input-main host-field';
+            newInput.placeholder = `LAN ${currentFields + 1}`;
+            newInput.style.cssText = "width: 75px; font-size: 0.75rem; padding: 8px 5px; height: 38px; border-radius: 8px;";
+            
+            container.appendChild(newInput);
+        }
+
+        // Lógica VLSM MEJORADA
+        let currentExercise = [];
+        const i2p = i => [(i >>> 24) & 255, (i >>> 16) & 255, (i >>> 8) & 255, i & 255].join('.');
+        const p2i = p => p.split('.').reduce((a, o) => (a << 8) + parseInt(o), 0) >>> 0;
+        const getMask = p => i2p((0xFFFFFFFF << (32 - p)) >>> 0);
+
+        function generateLab() {
+            let pBase = parseInt(document.getElementById('maskInput').value) || 24;
+            const modalTitle = document.querySelector('#customModal h3');
+            
+            if(pBase < 8 || pBase > 30) {
+                modalTitle.innerText = "⚠️ FORMATO INVÁLIDO";
+                document.getElementById('modalMessage').innerText = "USA UNA MÁSCARA ENTRE 8 Y 30.";
+                document.getElementById('customModal').style.display = 'flex';
+                return;
+            }
+
+            let manualIp = document.getElementById('manualIpInput').value.trim();
+            let finalBaseIp;
+
+            if (manualIp !== "") {
+                const regexIp = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+                if (!regexIp.test(manualIp)) {
+                    modalTitle.innerText = "⚠️ DIRECCIÓN ERRÓNEA";
+                    document.getElementById('modalMessage').innerText = "IP MANUAL INVÁLIDA.";
+                    document.getElementById('customModal').style.display = 'flex';
+                    return;
+                }
+                finalBaseIp = p2i(manualIp) & (0xFFFFFFFF << (32 - pBase));
+            } else {
+                let firstOctet;
+                if (pBase <= 15) firstOctet = Math.floor(Math.random() * 126) + 1;
+                else if (pBase <= 23) firstOctet = Math.floor(Math.random() * (191 - 128 + 1)) + 128;
+                else firstOctet = Math.floor(Math.random() * (223 - 192 + 1)) + 192;
+                
+                let randomIP = `${firstOctet}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.0`;
+                finalBaseIp = p2i(randomIP) & (0xFFFFFFFF << (32 - pBase));
+            }
+
+            // EXTRACCIÓN DINÁMICA DE REQUERIMIENTOS MANUALES
+            let reqs = [];
+            const hostFields = document.getElementsByClassName('host-field');
+            for (let f of hostFields) {
+                let hVal = parseInt(f.value);
+                if (!isNaN(hVal) && hVal > 0) {
+                    reqs.push(hVal);
+                }
+            }
+
+            // MANTENER LOGICA ALEATORIA SI NO HAY INPUTS MANUALES
+            if (reqs.length === 0) {
+                if (pBase >= 24) {
+                    reqs = [Math.floor(Math.random()*60)+50, Math.floor(Math.random()*30)+20, 2, 2];
+                } else {
+                    reqs = [Math.floor(Math.random()*200)+150, Math.floor(Math.random()*100)+50, Math.floor(Math.random()*50)+20, 2];
+                }
+            }
+            reqs.sort((a,b)=>b-a);
+
+            // CONTROL ESTRICTO DE CAPACIDAD FÍSICA (DESBORDAMIENTO)
+            let totalAvailableIPs = Math.pow(2, 32 - pBase);
+            let totalRequestedIPs = 0;
+            let singleOverflowError = false;
+
+            reqs.forEach(r => {
+                let bits = Math.ceil(Math.log2(r + 2));
+                totalRequestedIPs += Math.pow(2, bits);
+                // Si una sola red pide un bloque mayor que el tamaño de la máscara raíz entera
+                if (bits > (32 - pBase)) singleOverflowError = true;
+            });
+
+            if (singleOverflowError) {
+                modalTitle.innerText = "⚠️ SEGMENTO IMPOSIBLE";
+                document.getElementById('modalMessage').innerText = "ERROR: UN REQUERIMIENTO EXCEDE POR SÍ SOLO EL TAMAÑO MÁXIMO DE LA MÁSCARA BASE (OVERFLOW DE SUBRED).";
+                document.getElementById('customModal').style.display = 'flex';
+                return;
+            }
+
+            if (totalRequestedIPs > totalAvailableIPs) {
+                modalTitle.innerText = "⚠️ COALICIÓN DE DIRECCIONES";
+                document.getElementById('modalMessage').innerText = "ERROR: LA SUMATORIA ACUMULADA DE HOSTS EXCEDE EL ESPACIO DE DIRECCIONAMIENTO DE LA MÁSCARA BASE SELECCIONADA.";
+                document.getElementById('customModal').style.display = 'flex';
+                return;
+            }
+            
+            document.getElementById('ipDisplay').innerText = `${i2p(finalBaseIp)}/${pBase}`;
+            
+            currentExercise = [];
+            let ptr = finalBaseIp;
+            const tbody = document.getElementById('tableContent');
+            tbody.innerHTML = '';
+
+            reqs.forEach((r, i) => {
+                let bits = Math.ceil(Math.log2(r + 2));
+                let sz = Math.pow(2, bits);
+                let p = 32 - bits;
+                let data = {
+                    id: i2p(ptr), pref: p.toString(), mask: getMask(p),
+                    f: i2p(ptr+1), l: i2p(ptr+sz-2), b: i2p(ptr+sz-1)
+                };
+                currentExercise.push(data);
+                tbody.innerHTML += `
+                    <tr class="reveal-row" style="animation-delay: ${i*0.1}s">
+                        <td style="font-size:0.5rem; font-weight:700">LAN_${i+1}</td>
+                        <td style="color:var(--orange-main); font-weight:bold">${r}</td>
+                        <td><input type="text" class="cell-input w-ip" id="id_${i}" placeholder="0.0.0.0"></td>
+                        <td><input type="text" class="cell-input w-pref" id="p_${i}" placeholder="24"></td>
+                        <td><input type="text" class="cell-input w-mask" id="m_${i}" placeholder="255.x.x.x"></td>
+                        <td><input type="text" class="cell-input w-ip" id="f_${i}"></td>
+                        <td><input type="text" class="cell-input w-ip" id="l_${i}"></td>
+                        <td><input type="text" class="cell-input w-ip" id="b_${i}"></td>
+                    </tr>`;
+                ptr += sz;
+            });
+            document.getElementById('labArea').style.display = 'block';
+        }
+
+        function verifyAnswers() {
+            currentExercise.forEach((s, i) => {
+                const keys = ['id', 'pref', 'mask', 'f', 'l', 'b'];
+                const fields = ['id', 'p', 'm', 'f', 'l', 'b'];
+                fields.forEach((f, idx) => {
+                    const el = document.getElementById(`${f}_${i}`);
+                    if(!el) return;
+                    el.classList.remove('correct', 'incorrect');
+                    el.classList.add(el.value.trim() === s[keys[idx]] ? 'correct' : 'incorrect');
+                });
+            });
+        }
+        function closeModal() { document.getElementById('customModal').style.display = 'none'; }
+
+        // LÓGICA CALCULADORA
+        let calcExp = "";
+        function toggleCalc(e) {
+            e.stopPropagation();
+            const widget = document.getElementById('calc-widget');
+            if (widget.classList.contains('modo-btn')) {
+                widget.classList.remove('modo-btn'); widget.classList.add('modo-exp');
+            } else {
+                if (e.target.classList.contains('calc-close') || e.target === widget) {
+                    widget.classList.remove('modo-exp'); widget.classList.add('modo-btn');
+                }
+            }
+        }
+        function actionCalc(e, val) {
+            e.stopPropagation();
+            if (val === 'C') { calcExp = ""; document.getElementById('calc-display-input').value = ""; }
+            else if (val === '=') solveCalc();
+            else pressCalc(val);
+        }
+        function pressCalc(val) {
+            const display = document.getElementById('calc-display-input');
+            calcExp += val;
+            let visual = val === '*' ? 'x' : (val === '/' ? '÷' : val);
+            display.value += visual;
+        }
+        function solveCalc() {
+            try {
+                let result;
+                if (calcExp.includes('^')) {
+                    let parts = calcExp.split('^');
+                    result = Math.pow(parseFloat(parts[0]), parseFloat(parts[1]));
+                } else {
+                    let cleanExp = calcExp.replace('×', '*').replace('÷', '/');
+                    result = eval(cleanExp);
+                }
+                document.getElementById('calc-display-input').value = result;
+                calcExp = result.toString();
+            } catch (e) {
+                document.getElementById('calc-display-input').value = "ERR";
+                calcExp = "";
+            }
+        }
+    </script>
+</body>
+</html>

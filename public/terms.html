@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocolo de Seguridad y Uso — DGNV Studios</title>
+    <link rel="icon" type="image/png" href="./img/webfav.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Roboto+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-main: #ff7b00;
+            --orange-soft: rgba(255, 123, 0, 0.1);
+            --radius-lg: 24px;
+            --radius-md: 12px;
+            --font-pixel: 'Press Start 2P', cursive;
+            --transition-theme: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        body.dark {
+            --bg: #0a0c10;
+            --card: rgba(22, 27, 34, 0.85);
+            --text: #f0f6fc;
+            --text-dim: #8b949e;
+            --border: rgba(255, 255, 255, 0.1);
+            --modal-overlay: rgba(0, 0, 0, 0.85);
+        }
+
+        body.light {
+            --bg: #f6f8fa;
+            --card: rgba(255, 255, 255, 0.95);
+            --text: #1f2328;
+            --text-dim: #636c76;
+            --border: rgba(0, 0, 0, 0.1);
+            --modal-overlay: rgba(255, 255, 255, 0.7);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 120px 20px 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: var(--transition-theme);
+            opacity: 0;
+            line-height: 1.6;
+        }
+
+        /* --- NAVIGATION --- */
+        .top-nav {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            left: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 15px;
+            z-index: 2000;
+        }
+
+        .theme-switch, .btn-logout {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            backdrop-filter: blur(12px);
+            cursor: pointer;
+        }
+
+        .theme-switch {
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-logout {
+            height: 45px;
+            min-width: 45px;
+            max-width: 45px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .btn-logout svg { width: 22px; fill: var(--orange-main); flex-shrink: 0; }
+        .logout-text {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--orange-main);
+            text-transform: uppercase;
+            white-space: nowrap;
+            opacity: 0;
+            max-width: 0;
+            transition: opacity 0.3s ease, max-width 0.5s ease;
+        }
+
+        .btn-logout:hover { max-width: 220px; border-color: var(--orange-main); padding: 0 20px; gap: 12px; }
+        .btn-logout:hover .logout-text { opacity: 1; max-width: 160px; }
+
+        /* --- CONTENT STRUCTURE --- */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            animation: fadeInUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-back {
+            text-decoration: none;
+            color: var(--orange-main);
+            font-family: var(--font-pixel);
+            font-size: 0.65rem;
+            margin-bottom: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover { transform: translateX(-8px); opacity: 0.8; }
+
+        header {
+            margin-bottom: 60px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 30px;
+        }
+
+        h1 {
+            font-family: var(--font-pixel);
+            font-size: 1.6rem;
+            color: var(--orange-main);
+            margin: 0 0 15px;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
+
+        .meta-info {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            gap: 20px;
+        }
+
+        /* --- THE ARTICLES --- */
+        .protocol-body {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 60px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        article { margin-bottom: 50px; }
+        article:last-child { margin-bottom: 0; }
+
+        h2 {
+            font-family: var(--font-pixel);
+            font-size: 0.85rem;
+            color: var(--orange-main);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h2::before { content: "//"; opacity: 0.5; }
+
+        p {
+            font-size: 1rem;
+            color: var(--text);
+            text-align: justify;
+            margin-bottom: 20px;
+            opacity: 0.95;
+        }
+
+        ul { padding-left: 20px; margin-bottom: 20px; }
+        li { margin-bottom: 12px; color: var(--text); }
+
+        .highlight { color: var(--orange-main); font-weight: 700; font-family: 'Roboto Mono', monospace; }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-overlay); backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 3000;
+            opacity: 0; transition: opacity 0.4s ease;
+        }
+
+        .modal-card {
+            background: var(--card); border: 2px solid var(--orange-main);
+            border-radius: var(--radius-md); padding: 40px; width: 350px; text-align: center;
+        }
+
+        footer {
+            margin-top: 80px;
+            text-align: center;
+            font-family: var(--font-pixel);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        /* MOBILE FIXES */
+        @media (max-width: 768px) {
+            .top-nav { top: 15px; left: 15px; right: 15px; justify-content: space-between; }
+            #theme-text { display: none; }
+            .protocol-body { padding: 30px 20px; }
+            h1 { font-size: 1.1rem; }
+            h2 { font-size: 0.7rem; }
+            p { font-size: 0.9rem; }
+            body { padding-top: 90px; }
+        }
+    </style>
+</head>
+<body class="dark" id="mainBody">
+
+    <nav class="top-nav">
+        <button class="theme-switch" onclick="toggleTheme()">
+            <span id="theme-icon">🌙</span> <span id="theme-text">Modo Oscuro</span>
+        </button>
+        <button class="btn-logout" onclick="showLogoutModal()">
+            <span class="logout-text">Cerrar Sesión</span>
+            <svg viewBox="0 0 24 24">
+                <path d="M16 13v-2H7V8l-5 4 5 4v-3h9zM20 3H9c-1.1 0-2 .9-2 2v4h2V5h11v14H9v-4H7v4c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+            </svg>
+        </button>
+    </nav>
+
+    <div class="modal-overlay" id="logoutModal">
+        <div class="modal-card">
+            <p style="font-size: 0.6rem; color: var(--text); margin-bottom: 25px; font-family: var(--font-pixel); line-height: 1.6;">> ¿TERMINAR CONEXIÓN CON DGNV-SYS?</p>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button onclick="confirmLogout()" style="background: var(--orange-main); color: white; border: none; padding: 12px 20px; cursor: pointer; font-family: var(--font-pixel); font-size: 0.45rem; border-radius: 4px;">SÍ, SALIR</button>
+                <button onclick="closeLogoutModal()" style="background: transparent; color: var(--text); border: 1px solid var(--border); padding: 12px 20px; cursor: pointer; font-family: var(--font-pixel); font-size: 0.45rem; border-radius: 4px;">ANULAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="menu.html" class="btn-back">< REGRESAR</a>
+
+        <header>
+            <h1>Protocolo de Sistema</h1>
+            <div class="meta-info">
+                <span>VER: 2.0.4</span>
+                <span>STATUS: OPERATIONAL</span>
+                <span>AUTH: DGNV_ST_ADMIN</span>
+            </div>
+        </header>
+
+        <main class="protocol-body">
+            
+            <article>
+                <h2>ARTÍCULO I: OBJETO Y ALCANCE</h2>
+                <p>La presente Directiva regula los términos legales, técnicos y de conducta que rigen el ecosistema digital <span class="highlight">DGNV Studios</span>. Al autenticarse en el sistema, el usuario acepta de manera irrevocable someterse a estos protocolos. Las herramientas de cálculo, como el <span class="highlight">VLSM Lab</span>, son propiedad tecnológica de DGNV y se despliegan bajo licencia de uso educativo.</p>
+            </article>
+
+            <article>
+                <h2>ARTÍCULO II: RESPONSABILIDAD TÉCNICA</h2>
+                <p>DGNV Studios garantiza la integridad matemática de sus algoritmos de segmentación IP. No obstante, el usuario asume la responsabilidad total sobre:</p>
+                <ul>
+                    <li>La implementación de configuraciones en dispositivos de hardware real.</li>
+                    <li>La pérdida de conectividad derivada de una mala interpretación de los datos.</li>
+                    <li>La seguridad de las credenciales de acceso utilizadas para ingresar al terminal.</li>
+                </ul>
+            </article>
+
+            <article>
+                <h2>ARTÍCULO III: PROPIEDAD INTELECTUAL EXCLUSIVA</h2>
+                <p>Se establece la reserva total de derechos sobre la identidad visual <span class="highlight">Pixel-Art</span>, la estructura de código fuente (HTML5, CSS3, JS) y el diseño de la interfaz de usuario. Queda terminantemente prohibido:</p>
+                <ul>
+                    <li>La clonación de módulos o fragmentos de código para fines externos.</li>
+                    <li>La eliminación de firmas o marcas de agua de <span class="highlight">DGNV Studios</span>.</li>
+                    <li>El uso comercial de las herramientas de red sin autorización explícita.</li>
+                </ul>
+            </article>
+
+            <article>
+                <h2>ARTÍCULO IV: SEGURIDAD Y VULNERABILIDADES</h2>
+                <p>Cualquier intento de explotación de vulnerabilidades, incluyendo pero no limitado a: inyección de código SQL, ataques XSS en el <span class="highlight">Foro Comunitario</span>, o denegación de servicio (DoS), resultará en la inmediata revocación del acceso y el bloqueo permanente de la dirección IP de origen.</p>
+            </article>
+
+            <article>
+                <h2>ARTÍCULO V: GESTIÓN DE MEMORIA Y PRIVACIDAD</h2>
+                <p>El sistema opera bajo un protocolo de <span class="highlight">CERO_RASTREO</span>. La utilización de <span class="highlight">localStorage</span> tiene como fin único la persistencia del estado de sesión y la personalización estética del terminal. No se almacenan datos en bases de datos externas sin el consentimiento del usuario mediante las funciones interactivas del foro.</p>
+            </article>
+
+            <article>
+                <h2>ARTÍCULO VI: ENLACES A NODOS EXTERNOS</h2>
+                <p>DGNV Studios actúa como un concentrador de herramientas. Al activar los puentes hacia <span class="highlight">Discord</span> o <span class="highlight">GitHub</span>, el usuario reconoce que abandona el protocolo de seguridad interno de DGNV, quedando sujeto a las leyes y términos de dichas plataformas de terceros.</p>
+            </article>
+
+            <article>
+                <h2>ARTÍCULO VII: MODIFICACIONES DEL PROTOCOLO</h2>
+                <p>DGNV Studios se reserva el derecho de actualizar, modificar o expandir esta directiva en cualquier momento para adaptarse a nuevas herramientas de red o cambios en el marco legal digital. Es responsabilidad del usuario revisar este terminal periódicamente.</p>
+            </article>
+
+        </main>
+
+        <footer>
+            © 2026 DGNV STUDIOS
+        </footer>
+    </div>
+
+    <script>
+        // SEGURIDAD: VERIFICACIÓN OBLIGATORIA
+        const isLogged = localStorage.getItem('isLogged');
+        if (isLogged !== 'true') { 
+            window.location.replace('/main.html'); 
+        } else { 
+            document.getElementById('mainBody').style.opacity = '1'; 
+        }
+
+        // TEMA CONSISTENTE
+        const body = document.getElementById('mainBody');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+
+        window.onload = () => { applyTheme(localStorage.getItem('theme') || 'dark'); };
+
+        function toggleTheme() {
+            const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                body.classList.replace('dark', 'light');
+                themeIcon.innerText = '☀️'; themeText.innerText = 'Modo Claro';
+            } else {
+                body.classList.replace('light', 'dark');
+                themeIcon.innerText = '🌙'; themeText.innerText = 'Modo Oscuro';
+            }
+        }
+
+        // LOGOUT LOGIC
+        const modal = document.getElementById('logoutModal');
+        function showLogoutModal() { modal.style.display = 'flex'; setTimeout(() => modal.style.opacity = '1', 10); }
+        function closeLogoutModal() { modal.style.opacity = '0'; setTimeout(() => modal.style.display = 'none', 300); }
+        function confirmLogout() { 
+            localStorage.removeItem('isLogged'); 
+            window.location.replace('/main.html'); 
+        }
+    </script>
+</body>
+</html>
