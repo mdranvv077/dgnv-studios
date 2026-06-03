@@ -42,7 +42,7 @@ function logger(message, req = null) {
     console.log(logEntry.trim());
 }
 
-// 1. Registro de navegación y PROTECCIÓN DE RUTAS
+// 1. Registro de navegación y PROTECCIÓN DE RUTAS (Modificado para Render)
 app.use((req, res, next) => {
     const esPagina = req.url === '/' || req.url.endsWith('.html') || !req.url.includes('.');
     const esRecurso = req.url.includes('.css') || req.url.includes('.js') || req.url.includes('/img/');
@@ -51,9 +51,15 @@ app.use((req, res, next) => {
     const esRutaPrivada = req.url.includes('/Modalidades/') || req.url.includes('menu.html');
     
     if (esRutaPrivada) {
-        logger(`INTENTO DE ACCESO NO AUTORIZADO A: ${req.url}`, req);
         const referer = req.headers.referer || '';
-        if (!referer.includes(HOST) && !referer.includes('ngrok-free.dev')) {
+        
+        // Comprobamos si el origen es local, ngrok o el dominio de Render
+        const esOrigenValido = referer.includes(HOST) || 
+                               referer.includes('ngrok-free.dev') || 
+                               referer.includes('.render.com');
+
+        if (!esOrigenValido) {
+            logger(`INTENTO DE ACCESO NO AUTORIZADO A: ${req.url}`, req);
             return res.redirect('/main.html');
         }
     }
@@ -109,7 +115,7 @@ app.post('/api/comentarios', (req, res) => {
 app.post('/api/login', (req, res) => {
     const { user, password } = req.body;
 
-    // 3. Valida comparando contra las variables secretas de tu archivo .env
+    // 3. Valida comparando contra las variables secretas de tu archivo .env / Render Env
     if (user === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
         logger(`LOGIN EXITOSO | Usuario: "${user}"`, req);
         res.json({ success: true });
