@@ -111,11 +111,17 @@ app.post('/api/comentarios', (req, res) => {
     }
 });
 
-// 3. Ruta de Login (¡PROTEGIDA!)
+// 3. Ruta de Login (¡CON DIAGNÓSTICO EN CONSOLA!)
 app.post('/api/login', (req, res) => {
     const { user, password } = req.body;
 
-    // 3. Valida comparando contra las variables secretas de tu archivo .env / Render Env
+    // Esto delatará el error exacto en la sección de Logs de Render
+    console.log(`--- CONTROL DE VARIABLES EN RENDER ---`);
+    console.log(`Lo que espera Render -> Usuario: "${process.env.ADMIN_USER}" | Pass: "${process.env.ADMIN_PASS}"`);
+    console.log(`Lo que tú escribiste -> Usuario: "${user}" | Pass: "${password}"`);
+    console.log(`--------------------------------------`);
+
+    // Valida comparando contra las variables secretas de tu archivo .env / Render Env
     if (user === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
         logger(`LOGIN EXITOSO | Usuario: "${user}"`, req);
         res.json({ success: true });
