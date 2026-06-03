@@ -42,7 +42,7 @@ function logger(message, req = null) {
     console.log(logEntry.trim());
 }
 
-// 1. Registro de navegación y PROTECCIÓN DE RUTAS (Modificado para Render)
+// 1. Registro de navegación y PROTECCIÓN DE RUTAS SECUNDARIAS
 app.use((req, res, next) => {
     const esPagina = req.url === '/' || req.url.endsWith('.html') || !req.url.includes('.');
     const esRecurso = req.url.includes('.css') || req.url.includes('.js') || req.url.includes('/img/');
@@ -51,15 +51,13 @@ app.use((req, res, next) => {
     const esRutaPrivada = req.url.includes('/Modalidades/') || req.url.includes('menu.html');
     
     if (esRutaPrivada) {
-        const referer = req.headers.referer || '';
+        const cookieHeader = req.headers.cookie || '';
         
-        // Comprobamos si el origen es local, ngrok o el dominio de Render
-        const esOrigenValido = referer.includes(HOST) || 
-                               referer.includes('ngrok-free.dev') || 
-                               referer.includes('.render.com');
+        // Verificamos si el navegador lleva la marca de que ya inició sesión correctamente
+        const estaAutenticado = cookieHeader.includes('session_auth=true');
 
-        if (!esOrigenValido) {
-            logger(`INTENTO DE ACCESO NO AUTORIZADO A: ${req.url}`, req);
+        if (!estaAutenticado) {
+            logger(`ACCESO RECHAZADO (No ha iniciado sesión) a: ${req.url}`, req);
             return res.redirect('/main.html');
         }
     }
@@ -111,19 +109,15 @@ app.post('/api/comentarios', (req, res) => {
     }
 });
 
-// 3. Ruta de Login (¡CON DIAGNÓSTICO EN CONSOLA!)
+// 3. Ruta de Login (¡Crea el pase de entrada seguro!)
 app.post('/api/login', (req, res) => {
     const { user, password } = req.body;
 
-    // Esto delatará el error exacto en la sección de Logs de Render
-    console.log(`--- CONTROL DE VARIABLES EN RENDER ---`);
-    console.log(`Lo que espera Render -> Usuario: "${process.env.ADMIN_USER}" | Pass: "${process.env.ADMIN_PASS}"`);
-    console.log(`Lo que tú escribiste -> Usuario: "${user}" | Pass: "${password}"`);
-    console.log(`--------------------------------------`);
-
-    // Valida comparando contra las variables secretas de tu archivo .env / Render Env
     if (user === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
         logger(`LOGIN EXITOSO | Usuario: "${user}"`, req);
+        
+        // Le plantamos una cookie al navegador para que el servidor lo reconozca en las otras páginas
+        res.setHeader('Set-Cookie', 'session_auth=true; Path=/; HttpOnly; SameSite=Strict');
         res.json({ success: true });
     } else {
         logger(`INTENTO FALLIDO | Usuario: "${user}" | Pass: "${password}"`, req);
