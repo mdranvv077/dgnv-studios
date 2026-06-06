@@ -102,7 +102,7 @@
         }
         #spotify-widget.modo-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         #spotify-widget.modo-btn:hover { transform: scale(1.1) rotate(-5deg); background: var(--orange-main); }
-        #spotify-widget.modo-exp { width: 280px; min-height: 260px; border-radius: 18px; padding: 15px; cursor: default; }
+        #spotify-widget.modo-exp { width: 310px; min-height: 280px; border-radius: 18px; padding: 15px; cursor: default; }
         #spotify-full-content, #spotify-icon-content { transition: opacity 0.3s ease; }
         #spotify-widget.modo-btn #spotify-full-content { opacity: 0; pointer-events: none; display: none; }
         #spotify-widget.modo-exp #spotify-icon-content { opacity: 0; pointer-events: none; display: none; }
@@ -114,9 +114,16 @@
         .spotify-close { cursor: pointer; user-select: none; transition: color 0.2s; }
         .spotify-close:hover { color: #ff4444; }
         .spotify-status { font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--text); margin-bottom: 12px; line-height: 1.4; }
+        .spotify-current-block { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+        .spotify-cover { width: 70px; height: 70px; border-radius: 14px; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.08); }
+        .spotify-current-meta { display: grid; gap: 4px; }
+        .spotify-current-title { font-family: var(--font-pixel); font-size: 0.7rem; color: var(--orange-main); line-height: 1.2; }
+        .spotify-current-sub { font-family: 'Inter', sans-serif; font-size: 0.7rem; color: var(--text-dim); }
         .spotify-current, .spotify-line, .spotify-note, .spotify-error { font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4; }
         .spotify-current strong, .spotify-line strong { color: var(--text); }
         .spotify-next-title { font-family: var(--font-pixel); font-size: 0.55rem; color: var(--orange-main); text-transform: uppercase; margin-top: 10px; margin-bottom: 6px; }
+        .spotify-track-card { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px; }
+        .spotify-track-card strong { color: var(--text); }
         .spotify-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
         .spotify-actions button { background: var(--orange-main); color: white; border: none; border-radius: 999px; padding: 8px 10px; font-family: var(--font-pixel); font-size: 0.55rem; cursor: pointer; transition: var(--transition); }
         .spotify-actions button:hover { filter: brightness(1.05); }
@@ -409,11 +416,17 @@
             const artists = item.artists.map(artist => artist.name).join(', ');
             const progress = formatDuration(currentData.progress_ms || 0);
             const duration = formatDuration(item.duration_ms || 0);
+            const cover = item.album.images && item.album.images.length ? item.album.images[0].url : '';
 
             status.innerHTML = `Reproduciendo ahora:`;
             trackList.innerHTML = `
-                <div class="spotify-current"><strong>${artists} - ${item.name}</strong></div>
-                <div class="spotify-current">${item.album.name} · ${progress} / ${duration}</div>
+                <div class="spotify-current-block">
+                    <img class="spotify-cover" src="${cover}" alt="${item.name}">
+                    <div class="spotify-current-meta">
+                        <div class="spotify-current-title"><strong>${artists} - ${item.name}</strong></div>
+                        <div class="spotify-current-sub">${item.album.name} · ${progress} / ${duration}</div>
+                    </div>
+                </div>
             `;
 
             if (queueData && Array.isArray(queueData.queue) && queueData.queue.length > 0) {
@@ -422,7 +435,7 @@
                 nextItems.forEach((track, index) => {
                     const trackArtists = track.artists.map(artist => artist.name).join(', ');
                     trackList.innerHTML += `
-                        <div class="spotify-line">${index + 1}. <strong>${trackArtists} - ${track.name}</strong></div>
+                        <div class="spotify-track-card"><strong>${index + 1}. ${trackArtists} - ${track.name}</strong></div>
                     `;
                 });
             } else {
