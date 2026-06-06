@@ -225,7 +225,7 @@ app.get('/api/spotify/config', (req, res) => {
 app.get('/api/spotify/playback', (req, res) => {
     const client_id = process.env.SPOTIFY_CLIENT_ID;
     const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-    const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN || process.env.DGNV_SPOTIFY_REFRESH;
+    const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN || process.env.SPOTIFY_TOKEN_REFRESH || process.env.DGNV_SPOTIFY_REFRESH;
 
     if (!client_id || !client_secret || !refresh_token) {
         logger('Spotify owner playback not configured: missing env vars', req);
