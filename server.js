@@ -221,6 +221,85 @@ app.get('/api/spotify/config', (req, res) => {
     res.json({ client_id });
 });
 
+// Endpoint público que devuelve la reproducción actual del propietario usando refresh token del servidor
+app.get('/api/spotify/playback', (req, res) => {
+    const client_id = process.env.SPOTIFY_CLIENT_ID;
+    const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+    const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN || process.env.DGNV_SPOTIFY_REFRESH;
+
+    if (!client_id || !client_secret || !refresh_token) {
+        return res.status(404).json({ error: 'OWNER_SPOTIFY_NOT_CONFIGURED' });
+    }
+
+    const postData = querystring.stringify({
+        grant_type: 'refresh_token',
+        refresh_token,
+        client_id,
+        client_secret
+    });
+
+    const options = {
+        hostname: 'accounts.spotify.com',
+        path: '/api/token',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const request = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', async () => {
+            try {
+                const tokenJson = JSON.parse(data);
+                if (!tokenJson.access_token) return res.status(500).json({ error: 'NO_ACCESS_TOKEN', raw: tokenJson });
+                const access = tokenJson.access_token;
+
+                // Consultar currently-playing
+                const getOpts = (path) => ({ hostname: 'api.spotify.com', path, method: 'GET', headers: { Authorization: `Bearer ${access}` } });
+
+                const doGet = (path) => new Promise((resolve, reject) => {
+                    const r = https.request(getOpts(path), (resp) => {
+                        let d = '';
+                        resp.on('data', c => d += c);
+                        resp.on('end', () => resolve({ status: resp.statusCode, body: d }));
+                    });
+                    r.on('error', e => reject(e));
+                    r.end();
+                });
+
+                try {
+                    const currentResp = await doGet('/v1/me/player/currently-playing');
+                    let currentJson = null;
+                    if (currentResp.status === 200) currentJson = JSON.parse(currentResp.body);
+                    else if (currentResp.status === 204) currentJson = null;
+
+                    const queueResp = await doGet('/v1/me/player/queue');
+                    const queueJson = queueResp.status === 200 ? JSON.parse(queueResp.body) : null;
+
+                    // Si Spotify devolvió un nuevo refresh token (raro en refresh flow), podemos logearlo
+                    if (tokenJson.refresh_token) {
+                        logger('Spotify: nuevo refresh_token recibido (no se guarda automáticamente en este servidor).');
+                    }
+
+                    res.json({ current: currentJson, queue: queueJson });
+                } catch (err) {
+                    res.status(500).json({ error: 'SPOTIFY_API_ERROR', message: err.message });
+                }
+
+            } catch (e) {
+                res.status(500).json({ error: 'INVALID_TOKEN_RESPONSE', raw: data });
+            }
+        });
+    });
+
+    request.on('error', err => res.status(500).json({ error: err.message }));
+    request.write(postData);
+    request.end();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {

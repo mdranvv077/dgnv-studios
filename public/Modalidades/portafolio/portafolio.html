@@ -211,11 +211,10 @@
                     <span>SPOTIFY LIVE</span>
                     <span class="spotify-close" onclick="toggleSpotifyWidget(event)">[X]</span>
                 </div>
-                <div id="spotify-connection-status" class="spotify-status">Presiona para conectar Spotify.</div>
+                <div id="spotify-connection-status" class="spotify-status">Haz click "Actualizar" para mostrar mi reproducción (solo propietario).</div>
                 <div id="spotify-track-list"></div>
                 <div class="spotify-actions">
-                    <button id="spotify-connect-btn" onclick="event.stopPropagation(); promptSpotifyToken()">Conectar</button>
-                    <button id="spotify-clear-btn" onclick="event.stopPropagation(); clearSpotifyToken()" style="display:none">Borrar</button>
+                    <button id="spotify-refresh-btn" onclick="event.stopPropagation(); fetchSpotifyPlayback()">Actualizar</button>
                 </div>
             </div>
         </div>
@@ -332,94 +331,21 @@
             selectedCard.classList.add('selected');
         }
 
-        const SPOTIFY_TOKEN_KEY = 'DGNV_SPOTIFY_TOKEN';
-
-        function getSpotifyToken() {
-            return localStorage.getItem(SPOTIFY_TOKEN_KEY) || '';
-        }
-
-        function setSpotifyToken(token) {
-            localStorage.setItem(SPOTIFY_TOKEN_KEY, token);
-            updateSpotifyTokenUI();
-        }
-
-        function clearSpotifyToken() {
-            localStorage.removeItem(SPOTIFY_TOKEN_KEY);
-            updateSpotifyTokenUI();
-        }
-
-        function updateSpotifyTokenUI() {
-            const status = document.getElementById('spotify-connection-status');
-            const btn = document.getElementById('spotify-connect-btn');
-            const clearBtn = document.getElementById('spotify-clear-btn');
-            if (!status || !btn || !clearBtn) return;
-            const token = getSpotifyToken();
-            if (token) {
-                status.textContent = 'Token Spotify cargado. Haz click para actualizar.';
-                btn.textContent = 'Actualizar';
-                clearBtn.style.display = 'inline-flex';
-            } else {
-                status.textContent = 'Presiona Conectar para pegar tu token de Spotify.';
-                btn.textContent = 'Conectar';
-                clearBtn.style.display = 'none';
-                document.getElementById('spotify-track-list').innerHTML = '';
-            }
-        }
-
-        async function promptSpotifyToken() {
-            // Intentar iniciar flujo OAuth si el servidor expone client_id
-            try {
-                const cfg = await fetch('/api/spotify/config').then(r => r.json());
-                const client_id = cfg.client_id;
-                const redirect_uri = window.location.origin + window.location.pathname;
-                if (client_id) {
-                    const scope = encodeURIComponent('user-read-currently-playing user-read-playback-state');
-                    const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${encodeURIComponent(client_id)}&scope=${scope}&redirect_uri=${encodeURIComponent(redirect_uri)}&show_dialog=true`;
-                    window.location.href = authUrl;
-                    return;
-                }
-            } catch (e) {
-                console.warn('No se pudo leer client_id desde servidor:', e);
-            }
-
-            // Fallback manual (antiguo): pegar token directamente
-            const token = prompt('Pega tu token de acceso Spotify (Bearer):');
-            if (token && token.trim()) {
-                setSpotifyToken(token.trim());
+        function toggleSpotifyWidget(e) {
+            e.stopPropagation();
+            const widget = document.getElementById('spotify-widget');
+            if (!widget) return;
+            if (widget.classList.contains('modo-btn')) {
+                widget.classList.remove('modo-btn');
+                widget.classList.add('modo-exp');
                 fetchSpotifyPlayback();
+            } else {
+                if (e.target.classList.contains('spotify-close') || e.target === widget) {
+                    widget.classList.remove('modo-exp');
+                    widget.classList.add('modo-btn');
+                }
             }
         }
-
-        // Manejar callback con ?code= en la URL: intercambiar por tokens en el servidor
-        (async function handleSpotifyCallback() {
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
-            if (!code) return;
-            // Limpiar parámetros de URL para UX
-            const newUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-
-            const redirect_uri = window.location.origin + window.location.pathname;
-            try {
-                const resp = await fetch('/api/spotify/exchange', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, redirect_uri })
-                });
-                const data = await resp.json();
-                if (data.access_token) {
-                    setSpotifyToken(data.access_token);
-                    if (data.refresh_token) localStorage.setItem('DGNV_SPOTIFY_REFRESH', data.refresh_token);
-                    fetchSpotifyPlayback();
-                } else {
-                    const statusEl = document.getElementById('spotify-connection-status');
-                    if (statusEl) statusEl.textContent = 'Error al intercambiar código: ' + (data.error || JSON.stringify(data));
-                }
-            } catch (err) {
-                console.error(err);
-                const statusEl = document.getElementById('spotify-connection-status');
-                if (statusEl) statusEl.textContent = 'Error intercambiando el código con el servidor.';
-            }
-        })();
 
         function toggleSpotifyWidget(e) {
             e.stopPropagation();
@@ -446,58 +372,26 @@
         }
 
         async function fetchSpotifyPlayback() {
-            const token = getSpotifyToken();
             const status = document.getElementById('spotify-connection-status');
             const trackList = document.getElementById('spotify-track-list');
             if (!status || !trackList) return;
-            if (!token) {
-                status.textContent = 'Necesitas un token de Spotify para ver tu reproducción.';
-                trackList.innerHTML = '';
-                return;
-            }
 
-            status.textContent = 'Obteniendo datos de Spotify...';
+            status.textContent = 'Obteniendo datos del propietario...';
             trackList.innerHTML = '';
 
             try {
-                const currentResp = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                // Si el token expiró, intentar refrescar usando refresh token almacenado
-                if (currentResp.status === 401) {
-                    const refresh = localStorage.getItem('DGNV_SPOTIFY_REFRESH');
-                    if (refresh) {
-                        const refreshResp = await fetch('/api/spotify/refresh', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ refresh_token: refresh })
-                        });
-                        const refreshData = await refreshResp.json();
-                        if (refreshData.access_token) {
-                            setSpotifyToken(refreshData.access_token);
-                            if (refreshData.refresh_token) localStorage.setItem('DGNV_SPOTIFY_REFRESH', refreshData.refresh_token);
-                            // reintentar la llamada original
-                            return fetchSpotifyPlayback();
-                        }
-                    }
-                }
-
-                if (currentResp.status === 204) {
-                    status.textContent = 'No hay reproducción activa en Spotify.';
+                const resp = await fetch('/api/spotify/playback');
+                if (resp.status === 404) {
+                    status.textContent = 'Reproducción del propietario no configurada en el servidor.';
                     return;
                 }
-
-                if (!currentResp.ok) throw new Error('Error al solicitar reproducción actual.');
-                const currentData = await currentResp.json();
-                const queueResp = await fetch('https://api.spotify.com/v1/me/player/queue', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const queueData = queueResp.ok ? await queueResp.json() : null;
-                renderSpotifyState(currentData, queueData);
+                if (!resp.ok) throw new Error('Error al obtener playback del servidor');
+                const data = await resp.json();
+                renderSpotifyState(data.current, data.queue);
             } catch (error) {
                 console.error(error);
-                status.textContent = 'Error Spotify: verifica tu token y permisos.';
-                trackList.innerHTML = `<div class="spotify-error">${error.message || 'No se pudo conectar con Spotify.'}</div>`;
+                status.textContent = 'Error al obtener reproducción del servidor.';
+                trackList.innerHTML = `<div class="spotify-error">${error.message || 'No se pudo conectar con el servidor.'}</div>`;
             }
         }
 
@@ -538,7 +432,6 @@
 
         window.onload = () => {
             applyTheme(localStorage.getItem('theme') || 'dark');
-            updateSpotifyTokenUI();
             fetchGitHubData();
         };
     </script>
