@@ -93,6 +93,34 @@
         .repo-link-text:hover { opacity: 0.8; }
         .launch-year { margin: 0; font-family: var(--font-pixel); font-size: 0.45rem; color: var(--text-dim); }
 
+        #spotify-widget {
+            position: fixed; bottom: 30px; left: 30px; z-index: 1000;
+            background: var(--card); border: 2px solid var(--orange-main);
+            backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            cursor: pointer; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        #spotify-widget.modo-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #spotify-widget.modo-btn:hover { transform: scale(1.1) rotate(-5deg); background: var(--orange-main); }
+        #spotify-widget.modo-exp { width: 280px; min-height: 260px; border-radius: 18px; padding: 15px; cursor: default; }
+        #spotify-full-content, #spotify-icon-content { transition: opacity 0.3s ease; }
+        #spotify-widget.modo-btn #spotify-full-content { opacity: 0; pointer-events: none; display: none; }
+        #spotify-widget.modo-exp #spotify-icon-content { opacity: 0; pointer-events: none; display: none; }
+        #spotify-widget.modo-exp #spotify-full-content { opacity: 1; display: block; }
+        #spotify-widget.modo-btn #spotify-icon-content { opacity: 1; display: flex; }
+        #spotify-icon-content svg { width: 30px; height: 30px; stroke: var(--orange-main); transition: stroke 0.3s; }
+        #spotify-widget.modo-btn:hover svg { stroke: white; }
+        .spotify-header { font-family: var(--font-pixel); font-size: 0.65rem; color: var(--orange-main); margin-bottom: 12px; display: flex; justify-content: space-between; text-transform: uppercase; }
+        .spotify-close { cursor: pointer; user-select: none; transition: color 0.2s; }
+        .spotify-close:hover { color: #ff4444; }
+        .spotify-status { font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--text); margin-bottom: 12px; line-height: 1.4; }
+        .spotify-current, .spotify-line, .spotify-note, .spotify-error { font-family: 'Inter', sans-serif; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4; }
+        .spotify-current strong, .spotify-line strong { color: var(--text); }
+        .spotify-next-title { font-family: var(--font-pixel); font-size: 0.55rem; color: var(--orange-main); text-transform: uppercase; margin-top: 10px; margin-bottom: 6px; }
+        .spotify-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .spotify-actions button { background: var(--orange-main); color: white; border: none; border-radius: 999px; padding: 8px 10px; font-family: var(--font-pixel); font-size: 0.55rem; cursor: pointer; transition: var(--transition); }
+        .spotify-actions button:hover { filter: brightness(1.05); }
+
         .repo-card { cursor: pointer; }
         .repo-card.selected { border-color: var(--orange-main); box-shadow: 0 0 0 2px rgba(255, 123, 0, 0.13); }
         .label-text { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; text-align: center; margin-bottom: 20px; }
@@ -172,6 +200,25 @@
             <div class="loading-text">> INICIALIZANDO PROTOCOLO DE BÚSQUEDA...</div>
         </main>
 
+        <div id="spotify-widget" class="modo-btn" onclick="toggleSpotifyWidget(event)">
+            <div id="spotify-icon-content">
+                <svg viewBox="0 0 496 512" fill="none" stroke="currentColor" stroke-width="20">
+                    <path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zM354 166.8c-5.5-7.8-15.7-10.2-23.5-4.6-64.3 41.1-145.2 50.4-240 26.1-9.1-2.2-18.2 3.8-20.4 12.9-2.2 9 .4 18.4 9.4 21.9 101.9 34.1 188.1 24.4 258.9-29.2 7.8-5 10.5-15.8 5.6-23.6zm24 78.9c-6.9-10-19.2-13.6-29.3-8.6-73.5 45.2-185.4 58.4-271.6 30.1-11.1-3.7-22.7 2.3-26.3 13.4-3.5 11.2 2.7 22.5 13.8 26 100.8 33.7 223.8 19.2 307.4-35.9 10.1-6.2 13.6-18.5 5.9-25zm16 82.4c-84.9 47.9-219.1 52.4-298 26-12.7-4.6-26.7 1.3-31.4 14-4.7 12.8 1.2 26.3 14 31 90.3 32.8 248.9 29.4 344.5-30.6 12.8-7 17.4-24.7 8.9-36.4-7.9-11.6-25.8-15.5-37.9-4z" />
+                </svg>
+            </div>
+            <div id="spotify-full-content">
+                <div class="spotify-header">
+                    <span>SPOTIFY LIVE</span>
+                    <span class="spotify-close" onclick="toggleSpotifyWidget(event)">[X]</span>
+                </div>
+                <div id="spotify-connection-status" class="spotify-status">Presiona para conectar Spotify.</div>
+                <div id="spotify-track-list"></div>
+                <div class="spotify-actions">
+                    <button id="spotify-connect-btn" onclick="event.stopPropagation(); promptSpotifyToken()">Conectar</button>
+                    <button id="spotify-clear-btn" onclick="event.stopPropagation(); clearSpotifyToken()" style="display:none">Borrar</button>
+                </div>
+            </div>
+        </div>
         <footer>© 2026 DGNV STUDIOS</footer>
     </div>
 
@@ -285,8 +332,148 @@
             selectedCard.classList.add('selected');
         }
 
+        const SPOTIFY_TOKEN_KEY = 'DGNV_SPOTIFY_TOKEN';
+
+        function getSpotifyToken() {
+            return localStorage.getItem(SPOTIFY_TOKEN_KEY) || '';
+        }
+
+        function setSpotifyToken(token) {
+            localStorage.setItem(SPOTIFY_TOKEN_KEY, token);
+            updateSpotifyTokenUI();
+        }
+
+        function clearSpotifyToken() {
+            localStorage.removeItem(SPOTIFY_TOKEN_KEY);
+            updateSpotifyTokenUI();
+        }
+
+        function updateSpotifyTokenUI() {
+            const status = document.getElementById('spotify-connection-status');
+            const btn = document.getElementById('spotify-connect-btn');
+            const clearBtn = document.getElementById('spotify-clear-btn');
+            if (!status || !btn || !clearBtn) return;
+            const token = getSpotifyToken();
+            if (token) {
+                status.textContent = 'Token Spotify cargado. Haz click para actualizar.';
+                btn.textContent = 'Actualizar';
+                clearBtn.style.display = 'inline-flex';
+            } else {
+                status.textContent = 'Presiona Conectar para pegar tu token de Spotify.';
+                btn.textContent = 'Conectar';
+                clearBtn.style.display = 'none';
+                document.getElementById('spotify-track-list').innerHTML = '';
+            }
+        }
+
+        function promptSpotifyToken() {
+            const token = prompt('Pega tu token de acceso Spotify (Bearer):');
+            if (token && token.trim()) {
+                setSpotifyToken(token.trim());
+                fetchSpotifyPlayback();
+            }
+        }
+
+        function toggleSpotifyWidget(e) {
+            e.stopPropagation();
+            const widget = document.getElementById('spotify-widget');
+            if (!widget) return;
+            if (widget.classList.contains('modo-btn')) {
+                widget.classList.remove('modo-btn');
+                widget.classList.add('modo-exp');
+                updateSpotifyTokenUI();
+                fetchSpotifyPlayback();
+            } else {
+                if (e.target.classList.contains('spotify-close') || e.target === widget) {
+                    widget.classList.remove('modo-exp');
+                    widget.classList.add('modo-btn');
+                }
+            }
+        }
+
+        function formatDuration(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            return `${minutes}:${seconds}`;
+        }
+
+        async function fetchSpotifyPlayback() {
+            const token = getSpotifyToken();
+            const status = document.getElementById('spotify-connection-status');
+            const trackList = document.getElementById('spotify-track-list');
+            if (!status || !trackList) return;
+            if (!token) {
+                status.textContent = 'Necesitas un token de Spotify para ver tu reproducción.';
+                trackList.innerHTML = '';
+                return;
+            }
+
+            status.textContent = 'Obteniendo datos de Spotify...';
+            trackList.innerHTML = '';
+
+            try {
+                const currentResp = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (currentResp.status === 204) {
+                    status.textContent = 'No hay reproducción activa en Spotify.';
+                    return;
+                }
+
+                if (!currentResp.ok) throw new Error('Error al solicitar reproducción actual.');
+                const currentData = await currentResp.json();
+                const queueResp = await fetch('https://api.spotify.com/v1/me/player/queue', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const queueData = queueResp.ok ? await queueResp.json() : null;
+                renderSpotifyState(currentData, queueData);
+            } catch (error) {
+                console.error(error);
+                status.textContent = 'Error Spotify: verifica tu token y permisos.';
+                trackList.innerHTML = `<div class="spotify-error">${error.message || 'No se pudo conectar con Spotify.'}</div>`;
+            }
+        }
+
+        function renderSpotifyState(currentData, queueData) {
+            const status = document.getElementById('spotify-connection-status');
+            const trackList = document.getElementById('spotify-track-list');
+            if (!status || !trackList) return;
+            if (!currentData || !currentData.item) {
+                status.textContent = 'No hay pista activa en reproducción.';
+                trackList.innerHTML = '';
+                return;
+            }
+
+            const item = currentData.item;
+            const artists = item.artists.map(artist => artist.name).join(', ');
+            const progress = formatDuration(currentData.progress_ms || 0);
+            const duration = formatDuration(item.duration_ms || 0);
+
+            status.innerHTML = `Reproduciendo ahora:`;
+            trackList.innerHTML = `
+                <div class="spotify-current"><strong>${artists} - ${item.name}</strong></div>
+                <div class="spotify-current">${item.album.name} · ${progress} / ${duration}</div>
+            `;
+
+            if (queueData && Array.isArray(queueData.queue) && queueData.queue.length > 0) {
+                const nextItems = queueData.queue.slice(0, 3);
+                trackList.innerHTML += `<div class="spotify-next-title">Próximas ${nextItems.length} canciones:</div>`;
+                nextItems.forEach((track, index) => {
+                    const trackArtists = track.artists.map(artist => artist.name).join(', ');
+                    trackList.innerHTML += `
+                        <div class="spotify-line">${index + 1}. <strong>${trackArtists} - ${track.name}</strong></div>
+                    `;
+                });
+            } else {
+                trackList.innerHTML += `<div class="spotify-note">No se pudo obtener la cola de reproducción o no hay próximas canciones.</div>`;
+            }
+        }
+
         window.onload = () => {
             applyTheme(localStorage.getItem('theme') || 'dark');
+            updateSpotifyTokenUI();
             fetchGitHubData();
         };
     </script>
