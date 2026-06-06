@@ -445,15 +445,14 @@
                 const nextItems = queueData.queue.slice(0, 3);
                 trackList.innerHTML += `<div class="spotify-next-title">Próximas ${nextItems.length} canciones:</div>`;
                 nextItems.forEach((track, index) => {
-                    const queueTrack = track.track || track;
-                    const trackArtists = queueTrack.artists.map(artist => artist.name).join(', ');
-                    const streamEstimate = formatStreamEstimate(queueTrack.popularity);
-                    const durationText = formatDuration(queueTrack.duration_ms || 0);
-                    const streamText = streamEstimate ? ` · ${streamEstimate} reproducciones totales` : ' · sin datos de reproducciones';
+                    const trackArtists = track.artists.map(artist => artist.name).join(', ');
+                    const streamEstimate = formatStreamEstimate(track.popularity);
+                    const durationText = formatDuration(track.duration_ms || 0);
+                    const streamText = streamEstimate ? ` · ${streamEstimate} reproducciones totales` : '';
                     trackList.innerHTML += `
                         <div class="spotify-track-card">
-                            <strong>${index + 1}. ${trackArtists} - ${queueTrack.name}</strong>
-                            <div class="spotify-track-meta">${queueTrack.album?.name || 'Single'} (${durationText})${streamText}</div>
+                            <strong>${index + 1}. ${trackArtists} - ${track.name}</strong>
+                            <div class="spotify-track-meta">${track.album?.name || 'Single'} (${durationText})${streamText}</div>
                         </div>
                     `;
                 });
