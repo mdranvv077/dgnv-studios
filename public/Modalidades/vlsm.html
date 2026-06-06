@@ -294,6 +294,48 @@
     </style>
 </head>
 <body class="dark" id="mainBody">
+    <script>
+        const AUTH_COOKIE_NAME = 'DGNV_AUTH';
+        const AUTH_SIG_NAME = 'DGNV_AUTH_SIG';
+        const AUTH_SECRET = 'DGNV_SESSION_2026';
+
+        function getCookie(name) {
+            const cookie = document.cookie.split('; ').find(item => item.startsWith(name + '='));
+            return cookie ? cookie.split('=')[1] : '';
+        }
+
+        function setCookie(name, value, days = 7) {
+            const date = new Date();
+            date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+            const secure = location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `${name}=${value}; path=/; SameSite=Strict${secure}; expires=${date.toUTCString()}`;
+        }
+
+        function deleteCookie(name) {
+            const secure = location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `${name}=; path=/; SameSite=Strict${secure}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        }
+
+        function signAuth(value) {
+            let hash = 0;
+            const text = value + AUTH_SECRET;
+            for (let i = 0; i < text.length; i++) {
+                hash = ((hash << 5) - hash) + text.charCodeAt(i);
+                hash |= 0;
+            }
+            return (hash >>> 0).toString(36);
+        }
+
+        function authCookieValid() {
+            return getCookie(AUTH_COOKIE_NAME) === '1' && getCookie(AUTH_SIG_NAME) === signAuth('1');
+        }
+
+        function requireAuth() {
+            if (!authCookieValid()) window.location.replace('/main.html');
+        }
+
+        requireAuth();
+    </script>
 
     <div id="customModal">
         <div class="modal-content">
@@ -423,8 +465,8 @@
     <script>
         // Lógica de Protección de Sesión
         (function() {
-            if (localStorage.getItem('isLogged') !== 'true') {
-                window.location.replace('/main.html'); 
+            if (!authCookieValid()) {
+                window.location.replace('/main.html');
             } else {
                 document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('mainBody').style.opacity = '1';

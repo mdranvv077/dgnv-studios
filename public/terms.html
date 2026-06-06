@@ -320,12 +320,43 @@
     </div>
 
     <script>
-        // SEGURIDAD: VERIFICACIÓN OBLIGATORIA
-        const isLogged = localStorage.getItem('isLogged');
-        if (isLogged !== 'true') { 
-            window.location.replace('/main.html'); 
-        } else { 
-            document.getElementById('mainBody').style.opacity = '1'; 
+        const AUTH_COOKIE_NAME = 'DGNV_AUTH';
+        const AUTH_SIG_NAME = 'DGNV_AUTH_SIG';
+        const AUTH_SECRET = 'DGNV_SESSION_2026';
+
+        function getCookie(name) {
+            const cookie = document.cookie.split('; ').find(item => item.startsWith(name + '='));
+            return cookie ? cookie.split('=')[1] : '';
+        }
+
+        function signAuth(value) {
+            let hash = 0;
+            const text = value + AUTH_SECRET;
+            for (let i = 0; i < text.length; i++) {
+                hash = ((hash << 5) - hash) + text.charCodeAt(i);
+                hash |= 0;
+            }
+            return (hash >>> 0).toString(36);
+        }
+
+        function deleteCookie(name) {
+            const secure = location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `${name}=; path=/; SameSite=Strict${secure}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        }
+
+        function clearAuthCookie() {
+            deleteCookie(AUTH_COOKIE_NAME);
+            deleteCookie(AUTH_SIG_NAME);
+        }
+
+        function authCookieValid() {
+            return getCookie(AUTH_COOKIE_NAME) === '1' && getCookie(AUTH_SIG_NAME) === signAuth('1');
+        }
+
+        if (!authCookieValid()) {
+            window.location.replace('/main.html');
+        } else {
+            document.getElementById('mainBody').style.opacity = '1';
         }
 
         // TEMA CONSISTENTE
@@ -357,6 +388,7 @@
         function closeLogoutModal() { modal.style.opacity = '0'; setTimeout(() => modal.style.display = 'none', 300); }
         function confirmLogout() { 
             localStorage.removeItem('isLogged'); 
+            clearAuthCookie();
             window.location.replace('/main.html'); 
         }
     </script>

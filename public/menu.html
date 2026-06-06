@@ -124,7 +124,7 @@
 
         .main-box:hover {
             width: 550px; 
-            height: 680px; /* Aumentado para contener cómodamente la 4ta opción */
+            height: 760px; /* Ajustado para contener cómodamente la 5ta opción */
             border-radius: var(--radius-lg);
             border-color: var(--orange-main);
             box-shadow: 0 0 40px var(--orange-soft);
@@ -300,6 +300,15 @@
                 </div>
             </div>
 
+            <div class="mod-container">
+                <div class="modalidad-item" onclick="abrirModulo('/Modalidades/portafolio/portafolio.html')">
+                    Portafolio <span class="num-pixel">05</span>
+                </div>
+                <div class="tip-box">
+                    <div class="tip-content">> EXPLORA REPOSITORIOS Y EDITA DESCRIPCIONES EN TIEMPO REAL.</div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -309,15 +318,47 @@
     </footer>
 
     <script>
-        // Verificación de sesión
-        if (localStorage.getItem('isLogged') !== 'true') window.location.replace('/main.html'); 
+        const AUTH_COOKIE_NAME = 'DGNV_AUTH';
+        const AUTH_SIG_NAME = 'DGNV_AUTH_SIG';
+        const AUTH_SECRET = 'DGNV_SESSION_2026';
+
+        function getCookie(name) {
+            const cookie = document.cookie.split('; ').find(item => item.startsWith(name + '='));
+            return cookie ? cookie.split('=')[1] : '';
+        }
+
+        function signAuth(value) {
+            let hash = 0;
+            const text = value + AUTH_SECRET;
+            for (let i = 0; i < text.length; i++) {
+                hash = ((hash << 5) - hash) + text.charCodeAt(i);
+                hash |= 0;
+            }
+            return (hash >>> 0).toString(36);
+        }
+
+        function deleteCookie(name) {
+            const secure = location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `${name}=; path=/; SameSite=Strict${secure}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        }
+
+        function clearAuthCookie() {
+            deleteCookie(AUTH_COOKIE_NAME);
+            deleteCookie(AUTH_SIG_NAME);
+        }
+
+        function authCookieValid() {
+            return getCookie(AUTH_COOKIE_NAME) === '1' && getCookie(AUTH_SIG_NAME) === signAuth('1');
+        }
+
+        if (!authCookieValid()) window.location.replace('/main.html');
         else document.getElementById('mainBody').style.opacity = '1';
 
         // Modales
         const modal = document.getElementById('logoutModal');
         function showLogoutModal() { modal.style.display = 'flex'; setTimeout(() => modal.style.opacity = '1', 10); }
         function closeLogoutModal() { modal.style.opacity = '0'; setTimeout(() => modal.style.display = 'none', 300); }
-        function confirmLogout() { localStorage.removeItem('isLogged'); window.location.replace('/main.html'); }
+        function confirmLogout() { localStorage.removeItem('isLogged'); clearAuthCookie(); window.location.replace('/main.html'); }
 
         // Navegación con loader
         function abrirModulo(url) {
