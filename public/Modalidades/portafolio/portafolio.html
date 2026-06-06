@@ -90,33 +90,6 @@
         .repo-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px; gap: 12px; flex-wrap: wrap; }
         .repo-link-text { font-family: var(--font-pixel); font-size: 0.4rem; color: var(--orange-main); text-transform: uppercase; text-decoration: none; }
         .repo-link-text:hover { opacity: 0.8; }
-        .btn-edit {
-            background: var(--orange-main);
-            color: #fff;
-            border: none;
-            border-radius: 999px;
-            padding: 10px 14px;
-            font-family: var(--font-pixel);
-            font-size: 0.4rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: var(--transition);
-        }
-        .btn-edit:hover { filter: brightness(1.05); }
-        .repo-desc[contenteditable="true"] {
-            background: rgba(255, 123, 0, 0.05);
-            border-radius: 14px;
-            padding: 12px 14px;
-            outline: none;
-            box-shadow: inset 0 0 0 1px rgba(255, 123, 0, 0.12);
-            display: block;
-            max-width: 100%;
-            height: auto;
-            overflow: visible;
-        }
-        .repo-desc[contenteditable="true"]:focus {
-            box-shadow: 0 0 0 4px rgba(255, 123, 0, 0.12);
-        }
         .launch-year { margin: 0; font-family: var(--font-pixel); font-size: 0.45rem; color: var(--text-dim); }
 
         .repo-card { cursor: pointer; }
@@ -281,7 +254,6 @@
                                 </div>
                                 <div class="repo-footer">
                                     <a class="repo-link-text" href="${repo.html_url}" target="_blank">[ VER EN GITHUB ]</a>
-                                    <button type="button" class="btn-edit" data-action="edit">[ EDITAR ]</button>
                                     <span class="launch-year">AÑO: ${añoActualizacion}</span>
                                 </div>
                             </div>
@@ -290,7 +262,6 @@
                 }).join('');
 
                 setupRepoSelection();
-                setupEditButtons();
 
             } catch (error) {
                 console.error(error);
@@ -307,57 +278,10 @@
             });
         }
 
-        function setupEditButtons() {
-            const editButtons = document.querySelectorAll('.btn-edit');
-            editButtons.forEach(button => {
-                button.addEventListener('click', event => {
-                    event.stopPropagation();
-                    const card = event.target.closest('.repo-card');
-                    if (!card) return;
-                    selectRepoCard(card);
-                    enableInlineEditing(card.querySelector('.repo-desc'));
-                });
-            });
-        }
-
         function selectRepoCard(card) {
             if (selectedCard) selectedCard.classList.remove('selected');
             selectedCard = card;
             selectedCard.classList.add('selected');
-        }
-
-        function enableInlineEditing(descElement) {
-            if (!descElement || descElement.isContentEditable) return;
-
-            const text = descElement.innerText.trim();
-            descElement.contentEditable = 'true';
-            descElement.classList.add('editing');
-            descElement.innerText = text === 'Sin descripción disponible en este repositorio.' ? '' : text;
-
-            const selection = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(descElement);
-            selection.removeAllRanges();
-            selection.addRange(range);
-            descElement.focus();
-
-            const finishEdit = () => {
-                descElement.contentEditable = 'false';
-                descElement.classList.remove('editing');
-                if (!descElement.innerText.trim()) {
-                    descElement.innerText = 'Sin descripción disponible en este repositorio.';
-                }
-            };
-
-            const onKeydown = event => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    descElement.blur();
-                }
-            };
-
-            descElement.addEventListener('blur', finishEdit, { once: true });
-            descElement.addEventListener('keydown', onKeydown, { once: true });
         }
 
         window.onload = () => {
