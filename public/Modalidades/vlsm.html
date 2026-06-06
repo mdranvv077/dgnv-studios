@@ -520,7 +520,17 @@
         const getMask = p => i2p((0xFFFFFFFF << (32 - p)) >>> 0);
 
         function generateLab() {
-            let pBase = parseInt(document.getElementById('maskInput').value) || 24;
+            // Mascara base: si el usuario no ingresa nada, elegir aleatoriamente entre 8 y 30
+            const maskRaw = document.getElementById('maskInput').value.trim();
+            let pBase;
+            if (maskRaw === '') {
+                const minMask = 8, maxMask = 30;
+                pBase = Math.floor(Math.random() * (maxMask - minMask + 1)) + minMask;
+                // mostrar sugerencia al usuario
+                document.getElementById('maskInput').value = pBase;
+            } else {
+                pBase = parseInt(maskRaw) || 24;
+            }
             const modalTitle = document.querySelector('#customModal h3');
             
             if(pBase < 8 || pBase > 30) {
@@ -548,7 +558,11 @@
                 else if (pBase <= 23) firstOctet = Math.floor(Math.random() * (191 - 128 + 1)) + 128;
                 else firstOctet = Math.floor(Math.random() * (223 - 192 + 1)) + 192;
                 
-                let randomIP = `${firstOctet}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.0`;
+                // generar una IP aleatoria completa y luego aplicar la máscara para obtener la network ID
+                const o2 = Math.floor(Math.random() * 256);
+                const o3 = Math.floor(Math.random() * 256);
+                const o4 = Math.floor(Math.random() * 256);
+                let randomIP = `${firstOctet}.${o2}.${o3}.${o4}`;
                 finalBaseIp = p2i(randomIP) & (0xFFFFFFFF << (32 - pBase));
             }
 
@@ -619,8 +633,8 @@
                         <td style="font-size:0.5rem; font-weight:700">LAN_${i+1}</td>
                         <td style="color:var(--orange-main); font-weight:bold">${r}</td>
                         <td><input type="text" class="cell-input w-ip" id="id_${i}" placeholder="0.0.0.0"></td>
-                        <td><input type="text" class="cell-input w-pref" id="p_${i}" placeholder="24"></td>
-                        <td><input type="text" class="cell-input w-mask" id="m_${i}" placeholder="255.x.x.x"></td>
+                        <td><input type="text" class="cell-input w-pref" id="p_${i}" placeholder="${p}"></td>
+                        <td><input type="text" class="cell-input w-mask" id="m_${i}" placeholder="${getMask(p)}"></td>
                         <td><input type="text" class="cell-input w-ip" id="f_${i}"></td>
                         <td><input type="text" class="cell-input w-ip" id="l_${i}"></td>
                         <td><input type="text" class="cell-input w-ip" id="b_${i}"></td>
