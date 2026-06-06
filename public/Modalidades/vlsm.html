@@ -579,23 +579,29 @@
             // MANTENER LOGICA ALEATORIA SI NO HAY INPUTS MANUALES
             if (reqs.length === 0) {
                 const totalAvailableIPs = Math.pow(2, 32 - pBase);
-                const usableHosts = Math.max(2, totalAvailableIPs - 2);
-                const primary = Math.max(2, Math.min(usableHosts - 6, Math.floor(usableHosts * 0.5)));
-                const secondary = Math.max(2, Math.min(usableHosts - primary - 4, Math.floor(usableHosts * 0.25)));
-                const tertiary = Math.max(2, Math.min(usableHosts - primary - secondary - 2, Math.floor(usableHosts * 0.1)));
+                const maxNetworks = 4;
+                let remaining = totalAvailableIPs;
+                const blocks = [];
 
-                reqs = [
-                    Math.max(2, Math.min(primary, usableHosts - 6)),
-                    Math.max(2, Math.min(secondary, usableHosts - primary - 4)),
-                    Math.max(2, Math.min(tertiary, usableHosts - primary - secondary - 2)),
-                    2
-                ];
+                while (blocks.length < maxNetworks && remaining >= 4) {
+                    let chosen = 4;
+                    for (let candidate = 4; candidate <= remaining; candidate *= 2) {
+                        const minRemaining = (maxNetworks - blocks.length - 1) * 4;
+                        if (remaining - candidate >= minRemaining) {
+                            chosen = candidate;
+                        } else {
+                            break;
+                        }
+                    }
+                    blocks.push(chosen);
+                    remaining -= chosen;
+                }
 
-                // Añadir variación pequeña para que no siempre sea idéntico
-                reqs = reqs.map(r => {
-                    const variance = Math.max(1, Math.floor(r * 0.2));
-                    return Math.max(2, Math.min(r, r - variance + Math.floor(Math.random() * (variance + 1))));
-                });
+                if (blocks.length === 0) {
+                    blocks.push(4);
+                }
+
+                reqs = blocks.map(b => Math.max(2, b - 2));
             }
             reqs.sort((a,b)=>b-a);
 
