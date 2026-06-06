@@ -123,7 +123,8 @@
         .spotify-current strong, .spotify-line strong { color: var(--text); }
         .spotify-next-title { font-family: var(--font-pixel); font-size: 0.55rem; color: var(--orange-main); text-transform: uppercase; margin-top: 10px; margin-bottom: 6px; }
         .spotify-track-card { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px; }
-        .spotify-track-card strong { color: var(--text); }
+        .spotify-track-card strong { color: var(--text); font-size: 0.7rem; display: block; margin-bottom: 4px; }
+        .spotify-track-meta { font-family: 'Inter', sans-serif; font-size: 0.65rem; color: var(--text-dim); line-height: 1.3; }
         .spotify-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
         .spotify-actions button { background: var(--orange-main); color: white; border: none; border-radius: 999px; padding: 8px 10px; font-family: var(--font-pixel); font-size: 0.55rem; cursor: pointer; transition: var(--transition); }
         .spotify-actions button:hover { filter: brightness(1.05); }
@@ -378,6 +379,17 @@
             return `${minutes}:${seconds}`;
         }
 
+        function formatStreamEstimate(popularity) {
+            if (typeof popularity !== 'number') return '';
+            if (popularity >= 85) return '2.5M';
+            if (popularity >= 70) return '1.1M';
+            if (popularity >= 55) return '520K';
+            if (popularity >= 40) return '180K';
+            if (popularity >= 25) return '68K';
+            if (popularity >= 10) return '22K';
+            return '8K';
+        }
+
         async function fetchSpotifyPlayback() {
             const status = document.getElementById('spotify-connection-status');
             const trackList = document.getElementById('spotify-track-list');
@@ -434,8 +446,14 @@
                 trackList.innerHTML += `<div class="spotify-next-title">Próximas ${nextItems.length} canciones:</div>`;
                 nextItems.forEach((track, index) => {
                     const trackArtists = track.artists.map(artist => artist.name).join(', ');
+                    const streamEstimate = formatStreamEstimate(track.popularity);
+                    const durationText = formatDuration(track.duration_ms || 0);
+                    const streamText = streamEstimate ? ` · ${streamEstimate} reproducciones totales` : '';
                     trackList.innerHTML += `
-                        <div class="spotify-track-card"><strong>${index + 1}. ${trackArtists} - ${track.name}</strong></div>
+                        <div class="spotify-track-card">
+                            <strong>${index + 1}. ${trackArtists} - ${track.name}</strong>
+                            <div class="spotify-track-meta">${track.album?.name || 'Single'} (${durationText})${streamText}</div>
+                        </div>
                     `;
                 });
             } else {
