@@ -366,13 +366,60 @@
             }
         }
 
-        function promptSpotifyToken() {
+        async function promptSpotifyToken() {
+            // Intentar iniciar flujo OAuth si el servidor expone client_id
+            try {
+                const cfg = await fetch('/api/spotify/config').then(r => r.json());
+                const client_id = cfg.client_id;
+                const redirect_uri = window.location.origin + window.location.pathname;
+                if (client_id) {
+                    const scope = encodeURIComponent('user-read-currently-playing user-read-playback-state');
+                    const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${encodeURIComponent(client_id)}&scope=${scope}&redirect_uri=${encodeURIComponent(redirect_uri)}&show_dialog=true`;
+                    window.location.href = authUrl;
+                    return;
+                }
+            } catch (e) {
+                console.warn('No se pudo leer client_id desde servidor:', e);
+            }
+
+            // Fallback manual (antiguo): pegar token directamente
             const token = prompt('Pega tu token de acceso Spotify (Bearer):');
             if (token && token.trim()) {
                 setSpotifyToken(token.trim());
                 fetchSpotifyPlayback();
             }
         }
+
+        // Manejar callback con ?code= en la URL: intercambiar por tokens en el servidor
+        (async function handleSpotifyCallback() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            if (!code) return;
+            // Limpiar parámetros de URL para UX
+            const newUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+
+            const redirect_uri = window.location.origin + window.location.pathname;
+            try {
+                const resp = await fetch('/api/spotify/exchange', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, redirect_uri })
+                });
+                const data = await resp.json();
+                if (data.access_token) {
+                    setSpotifyToken(data.access_token);
+                    if (data.refresh_token) localStorage.setItem('DGNV_SPOTIFY_REFRESH', data.refresh_token);
+                    fetchSpotifyPlayback();
+                } else {
+                    const statusEl = document.getElementById('spotify-connection-status');
+                    if (statusEl) statusEl.textContent = 'Error al intercambiar código: ' + (data.error || JSON.stringify(data));
+                }
+            } catch (err) {
+                console.error(err);
+                const statusEl = document.getElementById('spotify-connection-status');
+                if (statusEl) statusEl.textContent = 'Error intercambiando el código con el servidor.';
+            }
+        })();
 
         function toggleSpotifyWidget(e) {
             e.stopPropagation();
@@ -416,6 +463,24 @@
                 const currentResp = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+
+                // Si el token expiró, intentar refrescar usando refresh token almacenado
+                if (currentResp.status === 401) {
+                    const refresh = localStorage.getItem('DGNV_SPOTIFY_REFRESH');
+                    if (refresh) {
+                        const refreshResp = await fetch('/api/spotify/refresh', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ refresh_token: refresh })
+                        });
+                        const refreshData = await refreshResp.json();
+                        if (refreshData.access_token) {
+                            setSpotifyToken(refreshData.access_token);
+                            if (refreshData.refresh_token) localStorage.setItem('DGNV_SPOTIFY_REFRESH', refreshData.refresh_token);
+                            // reintentar la llamada original
+                            return fetchSpotifyPlayback();
+                        }
+                    }
+                }
 
                 if (currentResp.status === 204) {
                     status.textContent = 'No hay reproducción activa en Spotify.';

@@ -5,6 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const geoip = require('geoip-lite');
 const app = express();
+const https = require('https');
+const querystring = require('querystring');
 
 // 2. Lee el puerto desde .env o usa el 80 por defecto si no lo encuentra
 const PORT = process.env.PORT || 80; 
@@ -123,6 +125,100 @@ app.post('/api/login', (req, res) => {
         logger(`INTENTO FALLIDO | Usuario: "${user}" | Pass: "${password}"`, req);
         res.json({ success: false, message: 'Credenciales incorrectas' });
     }
+});
+
+// 4. Endpoints para intercambio de tokens Spotify (usado por el cliente para obtener access/refresh tokens)
+app.post('/api/spotify/exchange', (req, res) => {
+    const { code, redirect_uri } = req.body;
+    const client_id = process.env.SPOTIFY_CLIENT_ID;
+    const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+
+    if (!client_id || !client_secret) return res.status(500).json({ error: 'Falta SPOTIFY_CLIENT_ID o SPOTIFY_CLIENT_SECRET en .env' });
+    if (!code || !redirect_uri) return res.status(400).json({ error: 'Missing code or redirect_uri' });
+
+    const postData = querystring.stringify({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri,
+        client_id,
+        client_secret
+    });
+
+    const options = {
+        hostname: 'accounts.spotify.com',
+        path: '/api/token',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const request = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+            try {
+                const json = JSON.parse(data);
+                res.json(json);
+            } catch (e) {
+                res.status(500).json({ error: 'Invalid response from Spotify', raw: data });
+            }
+        });
+    });
+
+    request.on('error', err => res.status(500).json({ error: err.message }));
+    request.write(postData);
+    request.end();
+});
+
+app.post('/api/spotify/refresh', (req, res) => {
+    const { refresh_token } = req.body;
+    const client_id = process.env.SPOTIFY_CLIENT_ID;
+    const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+
+    if (!client_id || !client_secret) return res.status(500).json({ error: 'Falta SPOTIFY_CLIENT_ID o SPOTIFY_CLIENT_SECRET en .env' });
+    if (!refresh_token) return res.status(400).json({ error: 'Missing refresh_token' });
+
+    const postData = querystring.stringify({
+        grant_type: 'refresh_token',
+        refresh_token,
+        client_id,
+        client_secret
+    });
+
+    const options = {
+        hostname: 'accounts.spotify.com',
+        path: '/api/token',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const request = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+            try {
+                const json = JSON.parse(data);
+                res.json(json);
+            } catch (e) {
+                res.status(500).json({ error: 'Invalid response from Spotify', raw: data });
+            }
+        });
+    });
+
+    request.on('error', err => res.status(500).json({ error: err.message }));
+    request.write(postData);
+    request.end();
+});
+
+// Endpoint público para devolver el client_id (no expone secret)
+app.get('/api/spotify/config', (req, res) => {
+    const client_id = process.env.SPOTIFY_CLIENT_ID || '';
+    res.json({ client_id });
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
