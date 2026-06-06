@@ -224,6 +224,39 @@
         .link-protocolo:hover { color: var(--orange-main); opacity: 1; }
         .copyright { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; }
     </style>
+
+    <style>
+        /* Responsive fixes for narrow mobile screens (e.g. 720x1280) */
+        @media (max-width: 720px) {
+            body { padding: 10px; }
+            .top-nav { right: 10px; left: 10px; top: 12px; }
+            .theme-switch { padding: 8px 10px; font-size: 0.7rem; }
+            .btn-logout { height: 38px; min-width: 38px; max-width: 38px; }
+
+            .header { top: 40px; }
+            h2 { font-size: 1.2rem; }
+
+            .main-box {
+                width: calc(100% - 20px);
+                height: 52px;
+                border-radius: 16px;
+            }
+
+            /* On small screens we don't expand width beyond viewport; use full width and limit height */
+            .main-box:hover {
+                width: calc(100% - 20px) !important;
+                height: min(80vh, var(--expanded-height, 600px));
+                border-radius: 16px;
+                left: 0;
+            }
+
+            .options-list { padding: 0 20px; margin-top: 90px; gap: 10px; }
+            .modalidad-item { padding: 14px 18px; font-size: 0.62rem; }
+            .tip-content { font-size: 0.62rem; }
+
+            footer { bottom: 12px; }
+        }
+    </style>
 </head>
 <body class="dark" id="mainBody">
 
