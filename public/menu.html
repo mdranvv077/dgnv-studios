@@ -380,6 +380,26 @@
             const extra = 140; // espacio para título, paddings y separación
             const expanded = Math.max(220, listHeight + extra);
             mainBox.style.setProperty('--expanded-height', expanded + 'px');
+            // Guardamos la base para usarla cuando se abra una tip-box
+            mainBox.dataset.baseHeight = String(Math.round(expanded));
+            // Añadimos listeners a cada mod-container para aumentar altura cuando su tip se despliega
+            const modContainers = document.querySelectorAll('.mod-container');
+            modContainers.forEach(mc => {
+                const tip = mc.querySelector('.tip-box');
+                if (!tip) return;
+                mc.addEventListener('mouseenter', () => {
+                    // tip.scrollHeight devuelve la altura completa que ocuparía la descripción
+                    const tipH = tip.scrollHeight || 150;
+                    const base = parseInt(mainBox.dataset.baseHeight || String(expanded), 10);
+                    // sumar un pequeño margen
+                    const newH = base + tipH + 20;
+                    mainBox.style.setProperty('--expanded-height', newH + 'px');
+                });
+                mc.addEventListener('mouseleave', () => {
+                    const base = parseInt(mainBox.dataset.baseHeight || String(expanded), 10);
+                    mainBox.style.setProperty('--expanded-height', base + 'px');
+                });
+            });
         }
 
         window.onload = () => { applyTheme(localStorage.getItem('theme') || 'dark'); setMainBoxHeight(); };
