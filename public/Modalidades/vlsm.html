@@ -578,11 +578,24 @@
 
             // MANTENER LOGICA ALEATORIA SI NO HAY INPUTS MANUALES
             if (reqs.length === 0) {
-                if (pBase >= 24) {
-                    reqs = [Math.floor(Math.random()*60)+50, Math.floor(Math.random()*30)+20, 2, 2];
-                } else {
-                    reqs = [Math.floor(Math.random()*200)+150, Math.floor(Math.random()*100)+50, Math.floor(Math.random()*50)+20, 2];
-                }
+                const totalAvailableIPs = Math.pow(2, 32 - pBase);
+                const usableHosts = Math.max(2, totalAvailableIPs - 2);
+                const primary = Math.max(2, Math.min(usableHosts - 6, Math.floor(usableHosts * 0.5)));
+                const secondary = Math.max(2, Math.min(usableHosts - primary - 4, Math.floor(usableHosts * 0.25)));
+                const tertiary = Math.max(2, Math.min(usableHosts - primary - secondary - 2, Math.floor(usableHosts * 0.1)));
+
+                reqs = [
+                    Math.max(2, Math.min(primary, usableHosts - 6)),
+                    Math.max(2, Math.min(secondary, usableHosts - primary - 4)),
+                    Math.max(2, Math.min(tertiary, usableHosts - primary - secondary - 2)),
+                    2
+                ];
+
+                // Añadir variación pequeña para que no siempre sea idéntico
+                reqs = reqs.map(r => {
+                    const variance = Math.max(1, Math.floor(r * 0.2));
+                    return Math.max(2, Math.min(r, r - variance + Math.floor(Math.random() * (variance + 1))));
+                });
             }
             reqs.sort((a,b)=>b-a);
 
