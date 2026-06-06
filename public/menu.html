@@ -123,8 +123,8 @@
         }
 
         .main-box:hover {
-            width: 550px; 
-            height: 760px; /* Ajustado para contener cómodamente la 5ta opción */
+            width: 550px;
+            height: var(--expanded-height, 760px); /* altura dinámica según cantidad de modalidades */
             border-radius: var(--radius-lg);
             border-color: var(--orange-main);
             box-shadow: 0 0 40px var(--orange-soft);
@@ -370,7 +370,20 @@
         const body = document.getElementById('mainBody');
         const themeIcon = document.getElementById('theme-icon');
         const themeText = document.getElementById('theme-text');
-        window.onload = () => { applyTheme(localStorage.getItem('theme') || 'dark'); };
+        function setMainBoxHeight() {
+            const mainBox = document.querySelector('.main-box');
+            const optionsList = document.querySelector('.options-list');
+            if (!mainBox || !optionsList) return;
+            // Calcula la altura necesaria para mostrar todas las modalidades
+            // sumando márgenes y espacio superior para el título
+            const listHeight = optionsList.scrollHeight;
+            const extra = 140; // espacio para título, paddings y separación
+            const expanded = Math.max(220, listHeight + extra);
+            mainBox.style.setProperty('--expanded-height', expanded + 'px');
+        }
+
+        window.onload = () => { applyTheme(localStorage.getItem('theme') || 'dark'); setMainBoxHeight(); };
+        window.addEventListener('resize', setMainBoxHeight);
         function toggleTheme() {
             const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
             applyTheme(newTheme);
