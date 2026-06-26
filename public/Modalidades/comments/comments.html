@@ -13,6 +13,7 @@
             --card: rgba(22, 27, 34, 0.8);
             --border: rgba(255, 255, 255, 0.12);
             --text: #f0f6fc;
+            --transition: all 0.25s ease;
         }
 
         body {
@@ -44,6 +45,31 @@
             max-width: 800px; /* Más ancho */
             margin-top: 20px;
         }
+
+        .top-nav {
+            position: absolute;
+            top: 10px;
+            right: 0;
+            z-index: 100;
+        }
+
+        .btn-theme {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-theme:hover { border-color: var(--orange-main); color: var(--orange-main); }
 
         h2 {
             font-family: 'Press Start 2P', cursive;
@@ -229,7 +255,7 @@
         }
     </style>
 </head>
-<body>
+<body id="mainBody" class="dark">
     <script>
         const AUTH_COOKIE_NAME = 'DGNV_AUTH';
         const AUTH_SIG_NAME = 'DGNV_AUTH_SIG';
@@ -273,10 +299,37 @@
             if (!authCookieValid()) window.location.replace('/main.html');
         }
 
+        function toggleTheme() {
+            const newTheme = document.body.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function applyTheme(theme) {
+            const bodyElement = document.getElementById('mainBody');
+            const icon = document.getElementById('t-icon');
+            const text = document.getElementById('t-text');
+            if (!bodyElement) return;
+            if (theme === 'light') {
+                bodyElement.classList.replace('dark', 'light');
+                if (icon) icon.innerText = '☀️';
+                if (text) text.innerText = 'Modo Claro';
+            } else {
+                bodyElement.classList.replace('light', 'dark');
+                if (icon) icon.innerText = '🌙';
+                if (text) text.innerText = 'Modo Oscuro';
+            }
+        }
+
         requireAuth();
     </script>
 
     <div class="container">
+        <div class="top-nav">
+            <button class="btn-theme" onclick="toggleTheme()">
+                <span id="t-icon">🌙</span> <span id="t-text">Modo Oscuro</span>
+            </button>
+        </div>
         <a href="../../menu.html" class="btn-back">< REGRESAR</a>
         
         <h2>> FORO_COMUNITARIO_DGNV</h2>
@@ -293,6 +346,7 @@
 
     <script>
         window.onload = () => {
+            applyTheme(localStorage.getItem('theme') || 'dark');
             const savedUser = localStorage.getItem('dgnv_username');
             if (savedUser) {
                 document.getElementById('username').value = savedUser;
