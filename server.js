@@ -24,8 +24,6 @@ app.use(express.urlencoded({ extended: true }));
 
 const LOG_FILE = path.join(__dirname, 'debug.log');
 
-// YA NO SE NECESITA: COMENTARIOS_FILE ni el if de fs.existsSync
-
 function logger(message, req = null) {
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, '0');
@@ -75,7 +73,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 2. API de Comentarios ← MODIFICADO para usar Supabase
+// 2. API de Comentarios ← MODIFICADO CON TRASTREO DE ERRORES
 app.get('/api/comentarios', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -86,13 +84,14 @@ app.get('/api/comentarios', async (req, res) => {
         if (error) throw error;
         res.json(data);
     } catch (err) {
+        console.error("❌ ERROR AL OBTENER COMENTARIOS DESDE SUPABASE:", err.message || err);
         res.json([]);
     }
 });
 
 app.post('/api/comentarios', async (req, res) => {
     const { usuario, texto } = req.body;
-    if (!usuario || !texto) return res.json({ success: false });
+    if (!usuario || !texto) return res.json({ success: false, error: 'Campos incompletos' });
 
     try {
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -103,7 +102,7 @@ app.post('/api/comentarios', async (req, res) => {
         const nuevoPost = {
             usuario,
             texto,
-            fecha: new Date().toLocaleString('es-CL'),
+            fecha: new Date().toISOString(), // ← Cambiado a formato ISO universal para evitar fallos en PostgreSQL
             pais,
             ip: ipLimpia
         };
@@ -113,10 +112,12 @@ app.post('/api/comentarios', async (req, res) => {
             .insert([nuevoPost]);
 
         if (error) throw error;
+        
         logger(`COMENTARIO | Usuario: "${usuario}" | País: ${pais.toUpperCase()}`, req);
         res.json({ success: true });
     } catch (err) {
-        res.json({ success: false });
+        console.error("❌ ERROR AL GUARDAR COMENTARIO EN SUPABASE:", err.message || err);
+        res.json({ success: false, error: err.message || err });
     }
 });
 
@@ -289,7 +290,6 @@ app.get('/api/spotify/playback', (req, res) => {
                     const queueResp = await doGet('/v1/me/player/queue');
                     const queueJson = queueResp.status === 200 ? JSON.parse(queueResp.body) : null;
 
-                    // Si Spotify devolvió un nuevo refresh token (raro en refresh flow), podemos logearlo
                     if (tokenJson.refresh_token) {
                         logger('Spotify: nuevo refresh_token recibido (no se guarda automáticamente en este servidor).');
                     }
