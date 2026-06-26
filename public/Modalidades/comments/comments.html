@@ -48,8 +48,8 @@
 
         .top-nav {
             position: absolute;
-            top: 10px;
-            right: 0;
+            top: 20px;
+            right: 20px;
             z-index: 100;
         }
 
@@ -63,10 +63,12 @@
             font-size: 0.75rem;
             font-weight: bold;
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
             transition: var(--transition);
+            box-shadow: none;
+            width: auto;
         }
 
         .btn-theme:hover { border-color: var(--orange-main); color: var(--orange-main); }
@@ -122,6 +124,9 @@
             border-radius: 10px;
             transition: all 0.2s;
             box-shadow: 0 4px 0px #b35600;
+        }
+        .btn-theme {
+            box-shadow: none;
         }
 
         button:active {
