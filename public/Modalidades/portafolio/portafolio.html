@@ -62,11 +62,13 @@
         .btn-theme:hover { border-color: var(--orange-main); color: var(--orange-main); }
         .btn-back {
             display: inline-block;
-            margin-bottom: 20px;
+            margin: 0 0 20px;
             text-decoration: none;
             color: var(--orange-main);
             font-size: 0.75rem;
             font-family: 'Press Start 2P', cursive;
+            line-height: 1.2;
+            padding: 0;
             transition: opacity 0.3s;
         }
         .btn-back:hover { opacity: 0.8; }
@@ -239,7 +241,9 @@
 
     <script>
         // CONFIGURACIÓN CENTRALIZADA: Pon tu usuario de GitHub aquí
-        const GITHUB_USER = "mdranvv077"; 
+        const GITHUB_USER = "mdranvv077";
+        // Opcional: usa un token personal de GitHub para evitar límites de tasa anónimos
+        const GITHUB_TOKEN = "";
 
         // Manejo del Tema Estilo DGNV
         const body = document.getElementById('mainBody');
@@ -270,19 +274,29 @@
             }
 
             try {
+                const headers = { 'Accept': 'application/vnd.github.v3+json' };
+                if (GITHUB_TOKEN) headers.Authorization = `token ${GITHUB_TOKEN}`;
+
                 // 1. Obtener información de tu Perfil
-                const profileResponse = await fetch(`https://api.github.com/users/${GITHUB_USER}`);
-                if (profileResponse.ok) {
-                    const profileData = await profileResponse.json();
-                    document.getElementById('userAvatar').src = profileData.avatar_url;
-                    document.getElementById('userName').innerText = (profileData.name || profileData.login).toUpperCase();
-                    document.getElementById('userBio').innerText = profileData.bio || "Desarrollador / Creador de contenido en DGNV Studios.";
-                    document.getElementById('profileContainer').style.display = 'block';
+                const profileResponse = await fetch(`https://api.github.com/users/${GITHUB_USER}`, { headers });
+                if (!profileResponse.ok) {
+                    const errorData = await profileResponse.json().catch(() => ({}));
+                    const detail = errorData.message ? `: ${errorData.message}` : '';
+                    throw new Error(`No se pudo obtener el perfil de GitHub (${profileResponse.status} ${profileResponse.statusText}${detail}).`);
                 }
+                const profileData = await profileResponse.json();
+                document.getElementById('userAvatar').src = profileData.avatar_url;
+                document.getElementById('userName').innerText = (profileData.name || profileData.login).toUpperCase();
+                document.getElementById('userBio').innerText = profileData.bio || "Desarrollador / Creador de contenido en DGNV Studios.";
+                document.getElementById('profileContainer').style.display = 'block';
 
                 // 2. Obtener tus Repositorios públicos ordenados por actualización reciente
-                const reposResponse = await fetch(`https://api.github.com/users/${GITHUB_USER}/repos?sort=updated&per_page=12`);
-                if (!reposResponse.ok) throw new Error("No se pudo obtener la información.");
+                const reposResponse = await fetch(`https://api.github.com/users/${GITHUB_USER}/repos?sort=updated&per_page=12`, { headers });
+                if (!reposResponse.ok) {
+                    const errorData = await reposResponse.json().catch(() => ({}));
+                    const detail = errorData.message ? `: ${errorData.message}` : '';
+                    throw new Error(`No se pudo obtener los repositorios de GitHub (${reposResponse.status} ${reposResponse.statusText}${detail}).`);
+                }
                 
                 const repos = await reposResponse.json();
                 
@@ -354,23 +368,6 @@
             if (widget.classList.contains('modo-btn')) {
                 widget.classList.remove('modo-btn');
                 widget.classList.add('modo-exp');
-                fetchSpotifyPlayback();
-            } else {
-                if (e.target.classList.contains('spotify-close') || e.target === widget) {
-                    widget.classList.remove('modo-exp');
-                    widget.classList.add('modo-btn');
-                }
-            }
-        }
-
-        function toggleSpotifyWidget(e) {
-            e.stopPropagation();
-            const widget = document.getElementById('spotify-widget');
-            if (!widget) return;
-            if (widget.classList.contains('modo-btn')) {
-                widget.classList.remove('modo-btn');
-                widget.classList.add('modo-exp');
-                updateSpotifyTokenUI();
                 fetchSpotifyPlayback();
             } else {
                 if (e.target.classList.contains('spotify-close') || e.target === widget) {
