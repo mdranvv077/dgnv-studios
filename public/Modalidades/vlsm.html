@@ -55,12 +55,13 @@
             width: 100%;
             max-width: 800px;
             margin-top: 20px;
+            position: relative; /* Corregido: Ahora contiene el top-nav dentro de sus márgenes */
         }
 
         .top-nav {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 10px; /* Sincronizado con ipv6.html */
+            right: 0;  /* Sincronizado con ipv6.html, alinea al borde del contenedor */
             z-index: 100;
         }
 
@@ -74,7 +75,7 @@
             font-size: 0.75rem;
             font-weight: bold;
             cursor: pointer;
-            display: inline-flex;
+            display: flex; /* Sincronizado con ipv6.html */
             align-items: center;
             gap: 8px;
             transition: var(--transition);
@@ -258,7 +259,7 @@
         @media (min-width: 769px) {
             h2 { font-size: 1rem; }
             .table-tip-mobile { display: none !important; }
-            .top-nav { top: 0; }
+            /* .top-nav { top: 0; } - Eliminado para evitar que rompa la consistencia de altura heredada */
             .card { padding: 15px; }
             .btn-action { width: 100%; padding: 15px; }
             .manual-ip-container.active { max-width: 100%; }
