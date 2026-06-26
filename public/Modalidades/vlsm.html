@@ -516,39 +516,89 @@
         // Lógica VLSM MEJORADA
         let currentExercise = [];
         const i2p = i => [(i >>> 24) & 255, (i >>> 16) & 255, (i >>> 8) & 255, i & 255].join('.');
-        const p2i = p => p.split('.').reduce((a, o) => (a << 8) + parseInt(o), 0) >>> 0;
+        const p2i = p => p.split('.').reduce((a, o) => (a << 8) + parseInt(o, 10), 0) >>> 0;
         const getMask = p => i2p((0xFFFFFFFF << (32 - p)) >>> 0);
 
+        function validateIpString(ip) {
+            const parts = ip.split('.');
+            if (parts.length !== 4) return false;
+            return parts.every(part => {
+                if (!/^\d+$/.test(part)) return false;
+                const value = Number(part);
+                return value >= 0 && value <= 255;
+            });
+        }
+
+        function presentError(title, message) {
+            const modalTitle = document.querySelector('#customModal h3');
+            modalTitle.innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('customModal').style.display = 'flex';
+        }
+
+        function getBlockInfo(hosts) {
+            const requiredHosts = Math.max(2, hosts + 2);
+            const size = Math.pow(2, Math.ceil(Math.log2(requiredHosts)));
+            return {
+                hosts,
+                size,
+                prefix: 32 - Math.log2(size)
+            };
+        }
+
+        function createAutoHostRequests(totalAvailableIPs) {
+            const candidateBlocks = [4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4];
+            const requests = [];
+            let remaining = totalAvailableIPs;
+            const maxNetworks = 4;
+
+            for (let blockSize of candidateBlocks) {
+                while (
+                    requests.length < maxNetworks &&
+                    remaining >= blockSize &&
+                    remaining - blockSize >= (maxNetworks - requests.length - 1) * 4
+                ) {
+                    requests.push(blockSize - 2);
+                    remaining -= blockSize;
+                }
+            }
+
+            while (requests.length < maxNetworks && remaining >= 4) {
+                const target = Math.min(256, remaining - (maxNetworks - requests.length - 1) * 4);
+                const fallback = Math.pow(2, Math.floor(Math.log2(target)));
+                requests.push(fallback - 2);
+                remaining -= fallback;
+            }
+
+            if (requests.length === 0) {
+                requests.push(2);
+            }
+
+            return requests;
+        }
+
         function generateLab() {
-            // Mascara base: si el usuario no ingresa nada, elegir aleatoriamente entre 8 y 30
             const maskRaw = document.getElementById('maskInput').value.trim();
             let pBase;
             if (maskRaw === '') {
                 const minMask = 8, maxMask = 30;
                 pBase = Math.floor(Math.random() * (maxMask - minMask + 1)) + minMask;
-                // mostrar sugerencia al usuario
                 document.getElementById('maskInput').value = pBase;
             } else {
-                pBase = parseInt(maskRaw) || 24;
+                pBase = Number(maskRaw);
             }
-            const modalTitle = document.querySelector('#customModal h3');
-            
-            if(pBase < 8 || pBase > 30) {
-                modalTitle.innerText = "⚠️ FORMATO INVÁLIDO";
-                document.getElementById('modalMessage').innerText = "USA UNA MÁSCARA ENTRE 8 Y 30.";
-                document.getElementById('customModal').style.display = 'flex';
+
+            if (!Number.isInteger(pBase) || pBase < 8 || pBase > 30) {
+                presentError('⚠️ FORMATO INVÁLIDO', 'USA UNA MÁSCARA ENTRE 8 Y 30.');
                 return;
             }
 
             let manualIp = document.getElementById('manualIpInput').value.trim();
             let finalBaseIp;
 
-            if (manualIp !== "") {
-                const regexIp = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
-                if (!regexIp.test(manualIp)) {
-                    modalTitle.innerText = "⚠️ DIRECCIÓN ERRÓNEA";
-                    document.getElementById('modalMessage').innerText = "IP MANUAL INVÁLIDA.";
-                    document.getElementById('customModal').style.display = 'flex';
+            if (manualIp !== '') {
+                if (!validateIpString(manualIp)) {
+                    presentError('⚠️ DIRECCIÓN ERRÓNEA', 'IP MANUAL INVÁLIDA.');
                     return;
                 }
                 finalBaseIp = p2i(manualIp) & (0xFFFFFFFF << (32 - pBase));
@@ -557,109 +607,90 @@
                 if (pBase <= 15) firstOctet = Math.floor(Math.random() * 126) + 1;
                 else if (pBase <= 23) firstOctet = Math.floor(Math.random() * (191 - 128 + 1)) + 128;
                 else firstOctet = Math.floor(Math.random() * (223 - 192 + 1)) + 192;
-                
-                // generar una IP aleatoria completa y luego aplicar la máscara para obtener la network ID
+
                 const o2 = Math.floor(Math.random() * 256);
                 const o3 = Math.floor(Math.random() * 256);
                 const o4 = Math.floor(Math.random() * 256);
-                let randomIP = `${firstOctet}.${o2}.${o3}.${o4}`;
+                const randomIP = `${firstOctet}.${o2}.${o3}.${o4}`;
                 finalBaseIp = p2i(randomIP) & (0xFFFFFFFF << (32 - pBase));
             }
 
-            // EXTRACCIÓN DINÁMICA DE REQUERIMIENTOS MANUALES
-            let reqs = [];
             const hostFields = document.getElementsByClassName('host-field');
-            for (let f of hostFields) {
-                let hVal = parseInt(f.value);
-                if (!isNaN(hVal) && hVal > 0) {
-                    reqs.push(hVal);
+            let reqs = [];
+            for (let field of hostFields) {
+                const value = Number(field.value);
+                if (!Number.isNaN(value) && value > 0) {
+                    reqs.push(Math.trunc(value));
                 }
             }
 
-            // MANTENER LOGICA ALEATORIA SI NO HAY INPUTS MANUALES
             if (reqs.length === 0) {
-                const totalAvailableIPs = Math.pow(2, 32 - pBase);
-                const maxNetworks = 4;
-                let remaining = totalAvailableIPs;
-                const blocks = [];
-
-                while (blocks.length < maxNetworks && remaining >= 4) {
-                    let chosen = 4;
-                    for (let candidate = 4; candidate <= remaining; candidate *= 2) {
-                        const minRemaining = (maxNetworks - blocks.length - 1) * 4;
-                        if (remaining - candidate >= minRemaining) {
-                            chosen = candidate;
-                        } else {
-                            break;
-                        }
-                    }
-                    blocks.push(chosen);
-                    remaining -= chosen;
-                }
-
-                if (blocks.length === 0) {
-                    blocks.push(4);
-                }
-
-                reqs = blocks.map(b => Math.max(2, b - 2));
+                reqs = createAutoHostRequests(Math.pow(2, 32 - pBase));
             }
-            reqs.sort((a,b)=>b-a);
 
-            // CONTROL ESTRICTO DE CAPACIDAD FÍSICA (DESBORDAMIENTO)
-            let totalAvailableIPs = Math.pow(2, 32 - pBase);
-            let totalRequestedIPs = 0;
-            let singleOverflowError = false;
+            reqs = reqs.filter(count => count > 0);
+            reqs.sort((a, b) => b - a);
 
-            reqs.forEach(r => {
-                let bits = Math.ceil(Math.log2(r + 2));
-                totalRequestedIPs += Math.pow(2, bits);
-                // Si una sola red pide un bloque mayor que el tamaño de la máscara raíz entera
-                if (bits > (32 - pBase)) singleOverflowError = true;
-            });
+            const totalAvailableIPs = Math.pow(2, 32 - pBase);
+            const blocks = reqs.map(hosts => getBlockInfo(hosts));
 
-            if (singleOverflowError) {
-                modalTitle.innerText = "⚠️ SEGMENTO IMPOSIBLE";
-                document.getElementById('modalMessage').innerText = "ERROR: UN REQUERIMIENTO EXCEDE POR SÍ SOLO EL TAMAÑO MÁXIMO DE LA MÁSCARA BASE (OVERFLOW DE SUBRED).";
-                document.getElementById('customModal').style.display = 'flex';
+            const singleOverflow = blocks.some(block => block.size > totalAvailableIPs);
+            if (singleOverflow) {
+                presentError(
+                    '⚠️ SEGMENTO IMPOSIBLE',
+                    'ERROR: UNA SOLA RED NECESITA MÁS ESPACIO DEL QUE OFRECE LA MÁSCARA BASE.'
+                );
                 return;
             }
 
+            const totalRequestedIPs = blocks.reduce((sum, block) => sum + block.size, 0);
             if (totalRequestedIPs > totalAvailableIPs) {
-                modalTitle.innerText = "⚠️ COALICIÓN DE DIRECCIONES";
-                document.getElementById('modalMessage').innerText = "ERROR: LA SUMATORIA ACUMULADA DE HOSTS EXCEDE EL ESPACIO DE DIRECCIONAMIENTO DE LA MÁSCARA BASE SELECCIONADA.";
-                document.getElementById('customModal').style.display = 'flex';
+                presentError(
+                    '⚠️ COALICIÓN DE DIRECCIONES',
+                    'ERROR: LA SUMATORIA DE BLOQUES DE SUBRED EXCEDE EL ESPACIO DISPONIBLE.'
+                );
                 return;
             }
-            
+
             document.getElementById('ipDisplay').innerText = `${i2p(finalBaseIp)}/${pBase}`;
-            
+
             currentExercise = [];
-            let ptr = finalBaseIp;
+            let pointer = finalBaseIp;
             const tbody = document.getElementById('tableContent');
             tbody.innerHTML = '';
 
-            reqs.forEach((r, i) => {
-                let bits = Math.ceil(Math.log2(r + 2));
-                let sz = Math.pow(2, bits);
-                let p = 32 - bits;
-                let data = {
-                    id: i2p(ptr), pref: p.toString(), mask: getMask(p),
-                    f: i2p(ptr+1), l: i2p(ptr+sz-2), b: i2p(ptr+sz-1)
+            blocks.forEach((block, index) => {
+                const { size, prefix, hosts } = block;
+                const networkId = i2p(pointer);
+                const firstIp = i2p(pointer + 1);
+                const lastIp = i2p(pointer + size - 2);
+                const broadcast = i2p(pointer + size - 1);
+
+                const data = {
+                    id: networkId,
+                    pref: prefix.toString(),
+                    mask: getMask(prefix),
+                    f: firstIp,
+                    l: lastIp,
+                    b: broadcast
                 };
+
                 currentExercise.push(data);
                 tbody.innerHTML += `
-                    <tr class="reveal-row" style="animation-delay: ${i*0.1}s">
-                        <td style="font-size:0.5rem; font-weight:700">LAN_${i+1}</td>
-                        <td style="color:var(--orange-main); font-weight:bold">${r}</td>
-                        <td><input type="text" class="cell-input w-ip" id="id_${i}" placeholder="0.0.0.0"></td>
-                        <td><input type="text" class="cell-input w-pref" id="p_${i}" placeholder="${p}"></td>
-                        <td><input type="text" class="cell-input w-mask" id="m_${i}" placeholder="${getMask(p)}"></td>
-                        <td><input type="text" class="cell-input w-ip" id="f_${i}"></td>
-                        <td><input type="text" class="cell-input w-ip" id="l_${i}"></td>
-                        <td><input type="text" class="cell-input w-ip" id="b_${i}"></td>
+                    <tr class="reveal-row" style="animation-delay: ${index * 0.1}s">
+                        <td style="font-size:0.5rem; font-weight:700">LAN_${index + 1}</td>
+                        <td style="color:var(--orange-main); font-weight:bold">${hosts}</td>
+                        <td><input type="text" class="cell-input w-ip" id="id_${index}" placeholder="0.0.0.0"></td>
+                        <td><input type="text" class="cell-input w-pref" id="p_${index}" placeholder="${prefix}"></td>
+                        <td><input type="text" class="cell-input w-mask" id="m_${index}" placeholder="${getMask(prefix)}"></td>
+                        <td><input type="text" class="cell-input w-ip" id="f_${index}"></td>
+                        <td><input type="text" class="cell-input w-ip" id="l_${index}"></td>
+                        <td><input type="text" class="cell-input w-ip" id="b_${index}"></td>
                     </tr>`;
-                ptr += sz;
+
+                pointer += size;
             });
+
             document.getElementById('labArea').style.display = 'block';
         }
 
@@ -667,9 +698,9 @@
             currentExercise.forEach((s, i) => {
                 const keys = ['id', 'pref', 'mask', 'f', 'l', 'b'];
                 const fields = ['id', 'p', 'm', 'f', 'l', 'b'];
-                fields.forEach((f, idx) => {
-                    const el = document.getElementById(`${f}_${i}`);
-                    if(!el) return;
+                fields.forEach((fieldKey, idx) => {
+                    const el = document.getElementById(`${fieldKey}_${i}`);
+                    if (!el) return;
                     el.classList.remove('correct', 'incorrect');
                     el.classList.add(el.value.trim() === s[keys[idx]] ? 'correct' : 'incorrect');
                 });
