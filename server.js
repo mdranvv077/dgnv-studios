@@ -86,10 +86,7 @@ app.use((req, res, next) => {
     const esRutaPrivada = req.url.includes('/Modalidades/') || req.url.includes('menu.html');
     
     if (esRutaPrivada) {
-        const cookieHeader = req.headers.cookie || '';
-        
-        // Verificamos si el navegador lleva la marca de que ya inició sesión correctamente
-        const estaAutenticado = cookieHeader.includes('session_auth=true');
+        const estaAutenticado = validateAuthCookies(req);
 
         if (!estaAutenticado) {
             logger(`ACCESO RECHAZADO (No ha iniciado sesión) a: ${req.url}`, req);
