@@ -300,7 +300,10 @@
         const AUTH_SECRET = 'DGNV_SESSION_2026';
 
         function getCookie(name) {
-            const cookie = document.cookie.split('; ').find(item => item.startsWith(name + '='));
+            const cookie = document.cookie
+                .split(';')
+                .map(item => item.trim())
+                .find(item => item.startsWith(name + '='));
             return cookie ? cookie.split('=')[1] : '';
         }
 
