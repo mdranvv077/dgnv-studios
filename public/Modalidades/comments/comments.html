@@ -9,11 +9,29 @@
     <style>
         :root {
             --orange-main: #ff7b00;
+            --orange-soft: rgba(255, 123, 0, 0.1);
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --transition: all 0.25s ease;
+        }
+
+        /* Variables añadidas para que el botón de tema funcione al 100% */
+        body.dark {
             --bg: #0a0c10;
             --card: rgba(22, 27, 34, 0.8);
-            --border: rgba(255, 255, 255, 0.12);
             --text: #f0f6fc;
-            --transition: all 0.25s ease;
+            --text-dim: #8b949e;
+            --border: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(0, 0, 0, 0.4);
+        }
+
+        body.light {
+            --bg: #f6f8fa;
+            --card: rgba(255, 255, 255, 0.9);
+            --text: #1f2328;
+            --text-dim: #636c76;
+            --border: rgba(0, 0, 0, 0.1);
+            --input-bg: #ffffff;
         }
 
         body {
@@ -26,6 +44,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            transition: background-color 0.4s ease, color 0.4s ease; /* Transición suave de color de fondo */
         }
 
         /* --- BOTÓN REGRESAR --- */
@@ -42,14 +61,15 @@
 
         .container {
             width: 100%;
-            max-width: 800px; /* Más ancho */
+            max-width: 800px;
             margin-top: 20px;
+            position: relative; /* Corregido: Mantiene el botón alineado al contenedor de 800px */
         }
 
         .top-nav {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 10px; /* Sincronizado con ipv6.html y vlsm.html */
+            right: 0;  /* Sincronizado con ipv6.html y vlsm.html */
             z-index: 100;
         }
 
@@ -75,7 +95,7 @@
 
         h2 {
             font-family: 'Press Start 2P', cursive;
-            font-size: 1.2rem; /* Más grande */
+            font-size: 1.2rem;
             color: var(--orange-main);
             text-align: center;
             margin-bottom: 40px;
@@ -87,7 +107,7 @@
         .input-section {
             background: var(--card);
             border: 2px solid var(--border);
-            padding: 30px; /* Más espacio */
+            padding: 30px;
             border-radius: 18px;
             margin-bottom: 40px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -95,15 +115,15 @@
 
         input, textarea {
             width: 100%;
-            background: rgba(0,0,0,0.4);
+            background: var(--input-bg); /* Adaptativo */
             border: 2px solid var(--border);
             border-radius: 10px;
             padding: 15px;
-            color: white;
+            color: var(--text); /* Adaptativo */
             font-family: 'Roboto Mono', monospace;
             margin-bottom: 15px;
             box-sizing: border-box;
-            font-size: 1.1rem; /* Texto más grande */
+            font-size: 1.1rem;
             transition: border-color 0.3s;
         }
 
@@ -118,7 +138,7 @@
             border: none;
             padding: 18px;
             font-family: 'Press Start 2P', cursive;
-            font-size: 0.7rem; /* Más grande */
+            font-size: 0.7rem;
             cursor: pointer;
             width: 100%;
             border-radius: 10px;
@@ -144,11 +164,12 @@
 
         .post {
             background: var(--card);
-            border-left: 6px solid var(--orange-main); /* Borde más grueso */
+            border-left: 6px solid var(--orange-main);
             padding: 25px;
             border-radius: 8px;
             animation: fadeIn 0.5s ease-out;
             backdrop-filter: blur(5px);
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -178,28 +199,28 @@
         }
 
         .flag {
-            width: 24px; /* Bandera más grande */
+            width: 24px;
             height: auto;
             border-radius: 3px;
             box-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
 
         .date { 
-            color: #8b949e; 
+            color: var(--text-dim); /* Adaptativo */
             font-size: 0.75rem; 
         }
 
         .content { 
-            font-size: 1.15rem; /* Contenido más grande */
+            font-size: 1.15rem;
             line-height: 1.6; 
-            color: #e6edf3; 
+            color: var(--text); /* Adaptativo */
             word-wrap: break-word;
         }
 
         .reply-post {
             margin-left: 24px;
-            border-left: 4px solid #8b949e;
-            background: rgba(255,255,255,0.03);
+            border-left: 4px solid var(--text-dim); /* Adaptativo */
+            background: rgba(139, 148, 158, 0.05); /* Sombreado adaptativo para subcomentarios */
         }
 
         .actions {
@@ -244,10 +265,6 @@
 
         .actions button {
             margin: 0;
-        }
-
-        .post {
-            position: relative;
         }
 
         /* --- RESPONSIVE --- */
@@ -345,8 +362,7 @@
             <button onclick="postComment()">ENVIAR AL SISTEMA</button>
         </div>
 
-        <div id="feed" class="feed">
-            </div>
+        <div id="feed" class="feed"></div>
     </div>
 
     <script>
@@ -357,7 +373,6 @@
                 document.getElementById('username').value = savedUser;
             }
             loadComments();
-            // Auto-refresh cada 30 segundos para ver nuevos comentarios
             setInterval(loadComments, 30000);
         };
 
@@ -439,7 +454,7 @@
         function startEdit(commentId) {
             toggleEditForm(commentId);
             const textarea = document.getElementById(`edit-text-${commentId}`);
-            const commentContent = document.getElementById(`comment-content-${commentId}`);
+            const commentContent = document.getElementById('comment-content-' + commentId);
             if (textarea) textarea.value = commentContent ? commentContent.textContent.trim() : '';
         }
 
