@@ -122,15 +122,20 @@
         }
 
         .btn-back {
-            text-decoration: none;
-            color: var(--orange-main);
-            font-family: var(--font-pixel);
-            font-size: 0.65rem;
-            margin-bottom: 50px;
             display: inline-flex;
             align-items: center;
-            gap: 12px;
-            transition: 0.3s;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: var(--orange-main);
+            font-size: 0.75rem;
+            font-family: inherit;
+            padding: 10px 16px;
+            border: 1px solid rgba(255, 123, 0, 0.35);
+            border-radius: 12px;
+            transition: opacity 0.3s, transform 0.3s;
+            white-space: nowrap;
         }
 
         .btn-back:hover { transform: translateX(-8px); opacity: 0.8; }
