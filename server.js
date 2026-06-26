@@ -38,12 +38,19 @@ function logger(message, req = null) {
     let ip = 'SYSTEM';
     if (req) {
         ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        ip = ip.split(',')[0].trim();
         ip = ip.replace('::ffff:', '').replace('::1', '127.0.0.1');
     }
     
     const logEntry = `${timestamp} ${ip} ${message}\n`;
     fs.appendFileSync(LOG_FILE, logEntry);
     console.log(logEntry.trim());
+}
+
+function getRequestIp(req) {
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    ip = ip.split(',')[0].trim();
+    return ip.replace('::ffff:', '').replace('::1', '127.0.0.1');
 }
 
 // 1. Registro de navegación y PROTECCIÓN DE RUTAS SECUNDARIAS
@@ -76,13 +83,25 @@ app.use((req, res, next) => {
 // 2. API de Comentarios ← MODIFICADO CON TRASTREO DE ERRORES
 app.get('/api/comentarios', async (req, res) => {
     try {
+        const requestIp = getRequestIp(req);
         const { data, error } = await supabase
             .from('comentarios')
-            .select('id, usuario, texto, fecha, pais, parent_id')
+            .select('id, usuario, texto, fecha, pais, parent_id, ip')
             .order('id', { ascending: true });
 
         if (error) throw error;
-        res.json(data);
+
+        const comments = data.map(c => ({
+            id: c.id,
+            usuario: c.usuario,
+            texto: c.texto,
+            fecha: c.fecha,
+            pais: c.pais,
+            parent_id: c.parent_id,
+            can_modify: c.ip === requestIp
+        }));
+
+        res.json(comments);
     } catch (err) {
         console.error("❌ ERROR AL OBTENER COMENTARIOS DESDE SUPABASE:", err.message || err);
         res.json([]);
@@ -94,9 +113,8 @@ app.post('/api/comentarios', async (req, res) => {
     if (!usuario || !texto) return res.json({ success: false, error: 'Campos incompletos' });
 
     try {
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        const ipLimpia = ip.replace('::ffff:', '').replace('::1', '127.0.0.1');
-        const geo = geoip.lookup(ipLimpia);
+        const ip = getRequestIp(req);
+        const geo = geoip.lookup(ip);
         const pais = geo ? geo.country.toLowerCase() : 'cl';
 
         const nuevoPost = {
@@ -104,7 +122,7 @@ app.post('/api/comentarios', async (req, res) => {
             texto,
             fecha: new Date().toISOString(),
             pais,
-            ip: ipLimpia,
+            ip,
             parent_id: parent_id || null
         };
 
@@ -119,6 +137,74 @@ app.post('/api/comentarios', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error("❌ ERROR AL GUARDAR COMENTARIO EN SUPABASE:", err.message || err);
+        res.json({ success: false, error: err.message || err });
+    }
+});
+
+app.put('/api/comentarios/:id', async (req, res) => {
+    const { texto } = req.body;
+    const commentId = parseInt(req.params.id, 10);
+
+    if (!texto) return res.json({ success: false, error: 'Texto requerido' });
+    if (!commentId) return res.json({ success: false, error: 'ID inválido' });
+
+    try {
+        const requestIp = getRequestIp(req);
+        const { data: existing, error: fetchError } = await supabase
+            .from('comentarios')
+            .select('ip')
+            .eq('id', commentId)
+            .single();
+
+        if (fetchError || !existing) return res.json({ success: false, error: 'Comentario no encontrado' });
+        if (existing.ip !== requestIp) return res.json({ success: false, error: 'No autorizado' });
+
+        const { error: updateError } = await supabase
+            .from('comentarios')
+            .update({ texto })
+            .eq('id', commentId);
+
+        if (updateError) throw updateError;
+
+        logger(`MODIFICACIÓN | Comentario ${commentId} | IP: ${requestIp}`, req);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ ERROR AL MODIFICAR COMENTARIO EN SUPABASE:', err.message || err);
+        res.json({ success: false, error: err.message || err });
+    }
+});
+
+app.delete('/api/comentarios/:id', async (req, res) => {
+    const commentId = parseInt(req.params.id, 10);
+    if (!commentId) return res.json({ success: false, error: 'ID inválido' });
+
+    try {
+        const requestIp = getRequestIp(req);
+        const { data: existing, error: fetchError } = await supabase
+            .from('comentarios')
+            .select('ip')
+            .eq('id', commentId)
+            .single();
+
+        if (fetchError || !existing) return res.json({ success: false, error: 'Comentario no encontrado' });
+        if (existing.ip !== requestIp) return res.json({ success: false, error: 'No autorizado' });
+
+        await supabase
+            .from('comentarios')
+            .update({ parent_id: null })
+            .eq('parent_id', commentId);
+
+        const { error: deleteError } = await supabase
+            .from('comentarios')
+            .delete()
+            .eq('id', commentId);
+
+        if (deleteError) throw deleteError;
+
+        logger(`ELIMINACIÓN | Comentario ${commentId} | IP: ${requestIp}`, req);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('❌ ERROR AL ELIMINAR COMENTARIO EN SUPABASE:', err.message || err);
         res.json({ success: false, error: err.message || err });
     }
 });

@@ -209,6 +209,10 @@
             align-self: flex-end;
         }
 
+        .actions button {
+            margin-left: 10px;
+        }
+
         /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
             h2 { font-size: 0.9rem; }
@@ -327,13 +331,21 @@
                             </div>
                             <span class="date">${comment.fecha}</span>
                         </div>
-                        <div class="content">${comment.texto}</div>
+                        <div id="comment-content-${comment.id}" class="content">${comment.texto}</div>
                         <div class="actions">
                             <button class="reply-toggle" onclick="toggleReplyForm(${comment.id})">RESPONDER</button>
+                            ${comment.can_modify ? `
+                                <button class="reply-toggle" onclick="startEdit(${comment.id})">EDITAR</button>
+                                <button class="reply-toggle" onclick="deleteComment(${comment.id})">ELIMINAR</button>
+                            ` : ''}
                         </div>
                         <div id="reply-area-${comment.id}" class="reply-area">
                             <textarea id="reply-text-${comment.id}" rows="3" placeholder="Escribe tu respuesta..." maxlength="250"></textarea>
                             <button onclick="postComment(${comment.id})">Responder</button>
+                        </div>
+                        <div id="edit-area-${comment.id}" class="reply-area">
+                            <textarea id="edit-text-${comment.id}" rows="3" placeholder="Edita tu comentario..." maxlength="250"></textarea>
+                            <button onclick="confirmEdit(${comment.id})">Guardar</button>
                         </div>
                         ${comment.replies.map(reply => renderComment(reply, level + 1)).join('')}
                     </div>
@@ -349,6 +361,64 @@
             const area = document.getElementById(`reply-area-${commentId}`);
             if (!area) return;
             area.classList.toggle('active');
+        }
+
+        function toggleEditForm(commentId) {
+            const area = document.getElementById(`edit-area-${commentId}`);
+            if (!area) return;
+            area.classList.toggle('active');
+        }
+
+        function startEdit(commentId) {
+            toggleEditForm(commentId);
+            const textarea = document.getElementById(`edit-text-${commentId}`);
+            const commentContent = document.getElementById(`comment-content-${commentId}`);
+            if (textarea) textarea.value = commentContent ? commentContent.textContent.trim() : '';
+        }
+
+        async function confirmEdit(commentId) {
+            const texto = document.getElementById(`edit-text-${commentId}`).value.trim();
+            if (!texto) {
+                alert("SISTEMA: El texto no puede estar vacío.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/comentarios/${commentId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ texto })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    toggleEditForm(commentId);
+                    loadComments();
+                } else {
+                    alert(`SISTEMA: ${result.error || 'No autorizado'}`);
+                }
+            } catch (err) {
+                alert("SISTEMA: Error de enlace con el servidor.");
+            }
+        }
+
+        async function deleteComment(commentId) {
+            if (!confirm('¿Eliminar este comentario? Esta acción no se puede deshacer.')) return;
+
+            try {
+                const response = await fetch(`/api/comentarios/${commentId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    loadComments();
+                } else {
+                    alert(`SISTEMA: ${result.error || 'No autorizado'}`);
+                }
+            } catch (err) {
+                alert("SISTEMA: Error de enlace con el servidor.");
+            }
         }
 
         async function postComment(parentId = null) {
