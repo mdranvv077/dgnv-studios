@@ -175,7 +175,9 @@
         .actions {
             margin-top: 14px;
             display: flex;
+            flex-wrap: wrap;
             justify-content: flex-end;
+            gap: 10px;
         }
 
         .reply-toggle {
@@ -184,6 +186,7 @@
             color: var(--orange-main);
             padding: 10px 14px;
             font-size: 0.65rem;
+            min-width: 100px;
             width: auto;
             border-radius: 8px;
             box-shadow: none;
@@ -210,7 +213,11 @@
         }
 
         .actions button {
-            margin-left: 10px;
+            margin: 0;
+        }
+
+        .post {
+            position: relative;
         }
 
         /* --- RESPONSIVE --- */
