@@ -18,7 +18,7 @@
     { "name": "Core i5 3000 Gen", "family": "core", "model": "i5", "gen": "3ra Gen (Ivy Bridge)", "cores": "4/4", "clock": "3.2 GHz", "socket": "LGA1155", "year": 2012 },
     { "name": "Core i5 4000 Gen", "family": "core", "model": "i5", "gen": "4ta Gen (Haswell)", "cores": "4/4", "clock": "3.2 GHz", "socket": "LGA1150", "year": 2013 },
     { "name": "Core i5 5000 Gen", "family": "core", "model": "i5", "gen": "5ta Gen (Broadwell)", "cores": "4/4", "clock": "3.1 GHz", "socket": "LGA1150", "year": 2015 },
-    { "name": "Core i5 60000 Gen", "family": "core", "model": "i5", "gen": "6ta Gen (Skylake)", "cores": "4/4", "clock": "3.2 GHz", "socket": "LGA1151", "year": 2015 },
+    { "name": "Core i5 6000 Gen", "family": "core", "model": "i5", "gen": "6ta Gen (Skylake)", "cores": "4/4", "clock": "3.2 GHz", "socket": "LGA1151", "year": 2015 },
     { "name": "Core i5 7000 Gen", "family": "core", "model": "i5", "gen": "7ma Gen (Kaby Lake)", "cores": "4/4", "clock": "3.4 GHz", "socket": "LGA1151", "year": 2017 },
     { "name": "Core i5 8000 Gen", "family": "core", "model": "i5", "gen": "8va Gen (Coffee Lake)", "cores": "6/6", "clock": "2.8 GHz", "socket": "LGA1151", "year": 2017 },
     { "name": "Core i5 9000 Gen", "family": "core", "model": "i5", "gen": "9na Gen (Coffee L. Ref)", "cores": "6/6", "clock": "2.9 GHz", "socket": "LGA1151", "year": 2018 },
