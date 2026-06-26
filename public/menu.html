@@ -124,7 +124,7 @@
 
         .main-box:hover {
             width: 550px;
-            height: var(--expanded-height, 760px); /* altura dinámica según cantidad de modalidades */
+            height: var(--expanded-height, 760px); 
             border-radius: var(--radius-lg);
             border-color: var(--orange-main);
             box-shadow: 0 0 40px var(--orange-soft);
@@ -156,7 +156,7 @@
             margin-top: 110px; 
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Reducido levemente para mejorar la distribución */
+            gap: 15px; 
             transition: opacity 0.6s ease 0.5s;
             box-sizing: border-box;
         }
@@ -213,6 +213,66 @@
 
         .num-pixel { color: var(--orange-main); font-family: var(--font-pixel); }
 
+        /* --- ESTILO WIDGET DISCORD FLOTANTE (NUEVO) --- */
+        #discord-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card);
+            border: 2px solid var(--orange-main);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #discord-widget.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        #discord-widget:hover {
+            background-color: var(--orange-main);
+            border-color: var(--orange-main);
+            box-shadow: 0 0 25px var(--orange-soft);
+        }
+
+        #discord-widget svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--orange-main);
+            transition: fill 0.3s ease;
+        }
+
+        #discord-widget:hover svg {
+            fill: #ffffff;
+        }
+
+        .discord-text {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text);
+            text-transform: uppercase;
+            white-space: nowrap;
+            transition: color 0.3s ease;
+        }
+
+        #discord-widget:hover .discord-text {
+            color: #ffffff;
+        }
+
         /* --- LOADER Y MODALES --- */
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         @keyframes scan { 0% { left: -60px; } 100% { left: 200px; } }
@@ -242,7 +302,6 @@
                 border-radius: 16px;
             }
 
-            /* On small screens we don't expand width beyond viewport; use full width and limit height */
             .main-box:hover {
                 width: calc(100% - 20px) !important;
                 height: min(80vh, var(--expanded-height, 600px));
@@ -253,11 +312,16 @@
             .options-list { padding: 0 20px; margin-top: 90px; gap: 10px; }
             .modalidad-item { padding: 14px 18px; font-size: 0.62rem; }
             .tip-content { font-size: 0.62rem; }
-
-            /* Loader text slightly smaller on mobile to avoid touching edges */
             .loader-text { font-size: 0.9rem; }
-
             footer { bottom: 12px; }
+
+            /* Ajustes responsivos para el widget flotante */
+            #discord-widget {
+                bottom: 20px;
+                right: 20px;
+                padding: 6px 12px;
+            }
+            .discord-text { font-size: 0.6rem; }
         }
     </style>
 </head>
@@ -272,6 +336,13 @@
             <svg viewBox="0 0 24 24"><path d="M16 13v-2H7V8l-5 4 5 4v-3h9zM20 3H9c-1.1 0-2 .9-2 2v4h2V5h11v14H9v-4H7v4c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
         </button>
     </div>
+
+    <a href="https://discord.gg/TU_INVITACION_AQUI" target="_blank" id="discord-widget">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36">
+            <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.18,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a74.37,74.37,0,0,0,6.72-11A68.21,68.21,0,0,1,28.1,80a49.1,49.1,0,0,0,3.37-2.64,75.48,75.48,0,0,0,64.2,0c1.15.93,2.28,1.81,3.37,2.64a68.32,68.32,0,0,1-10.65,5.34,74.37,74.37,0,0,0,6.72,11,105.73,105.73,0,0,0,31.06-18.83C129.87,50.15,123.81,27.31,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+        </svg>
+        <span class="discord-text">¡Entra al servidor!</span>
+    </a>
 
     <div class="modal-overlay" id="logoutModal">
         <div class="modal-card">
@@ -405,32 +476,24 @@
             setTimeout(() => { window.location.href = url; }, 1500);
         }
 
-        // Tema
-        const body = document.getElementById('mainBody');
-        const themeIcon = document.getElementById('theme-icon');
-        const themeText = document.getElementById('theme-text');
+        // Tema y Ajuste de Altura Dinámica del Menú
         function setMainBoxHeight() {
             const mainBox = document.querySelector('.main-box');
             const optionsList = document.querySelector('.options-list');
             if (!mainBox || !optionsList) return;
-            // Calcula la altura necesaria para mostrar todas las modalidades
-            // sumando márgenes y espacio superior para el título
             const listHeight = optionsList.scrollHeight;
-            const extra = 140; // espacio para título, paddings y separación
+            const extra = 140; 
             const expanded = Math.max(220, listHeight + extra);
             mainBox.style.setProperty('--expanded-height', expanded + 'px');
-            // Guardamos la base para usarla cuando se abra una tip-box
             mainBox.dataset.baseHeight = String(Math.round(expanded));
-            // Añadimos listeners a cada mod-container para aumentar altura cuando su tip se despliega
+            
             const modContainers = document.querySelectorAll('.mod-container');
             modContainers.forEach(mc => {
                 const tip = mc.querySelector('.tip-box');
                 if (!tip) return;
                 mc.addEventListener('mouseenter', () => {
-                    // tip.scrollHeight devuelve la altura completa que ocuparía la descripción
                     const tipH = tip.scrollHeight || 150;
                     const base = parseInt(mainBox.dataset.baseHeight || String(expanded), 10);
-                    // sumar un pequeño margen
                     const newH = base + tipH + 20;
                     mainBox.style.setProperty('--expanded-height', newH + 'px');
                 });
@@ -441,13 +504,26 @@
             });
         }
 
-        window.onload = () => { applyTheme(localStorage.getItem('theme') || 'dark'); setMainBoxHeight(); };
+        // Modificado para incluir el temporizador de 2 segundos del widget de Discord
+        window.onload = () => { 
+            applyTheme(localStorage.getItem('theme') || 'dark'); 
+            setMainBoxHeight(); 
+            
+            // Espera 2 segundos (2000ms) antes de mostrar el icono flotante
+            setTimeout(() => {
+                const discordWidget = document.getElementById('discord-widget');
+                if (discordWidget) discordWidget.classList.add('show');
+            }, 2000);
+        };
+        
         window.addEventListener('resize', setMainBoxHeight);
+        
         function toggleTheme() {
             const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
             applyTheme(newTheme);
             localStorage.setItem('theme', newTheme);
         }
+        
         function applyTheme(theme) {
             if (theme === 'light') {
                 body.classList.replace('dark', 'light');
