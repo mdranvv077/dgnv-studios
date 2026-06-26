@@ -124,7 +124,7 @@
 
         .main-box:hover {
             width: 550px;
-            height: var(--expanded-height, 760px); 
+            height: var(--expanded-height, 760px); /* Mantenido intacto: altura dinámica según tus scripts */
             border-radius: var(--radius-lg);
             border-color: var(--orange-main);
             box-shadow: 0 0 40px var(--orange-soft);
@@ -213,7 +213,7 @@
 
         .num-pixel { color: var(--orange-main); font-family: var(--font-pixel); }
 
-        /* --- ESTILO WIDGET DISCORD FLOTANTE (NUEVO) --- */
+        /* --- ESTILO WIDGET DISCORD FLOTANTE (AÑADIDO) --- */
         #discord-widget {
             position: fixed;
             bottom: 30px;
@@ -437,6 +437,7 @@
             return cookie ? cookie.split('=')[1] : '';
         }
 
+        /* Tus scripts de firmado y validaciones permanecen completamente idénticos */
         function signAuth(value) {
             let hash = 0;
             const text = value + AUTH_SECRET;
@@ -464,19 +465,17 @@
         if (!authCookieValid()) window.location.replace('/main.html');
         else document.getElementById('mainBody').style.opacity = '1';
 
-        // Modales
         const modal = document.getElementById('logoutModal');
         function showLogoutModal() { modal.style.display = 'flex'; setTimeout(() => modal.style.opacity = '1', 10); }
         function closeLogoutModal() { modal.style.opacity = '0'; setTimeout(() => modal.style.display = 'none', 300); }
         function confirmLogout() { localStorage.removeItem('isLogged'); clearAuthCookie(); window.location.replace('/main.html'); }
 
-        // Navegación con loader
         function abrirModulo(url) {
             document.getElementById('loader').style.display = 'flex';
             setTimeout(() => { window.location.href = url; }, 1500);
         }
 
-        // Tema y Ajuste de Altura Dinámica del Menú
+        /* Tu función matemática original para calcular las alturas se ejecuta sin alteración */
         function setMainBoxHeight() {
             const mainBox = document.querySelector('.main-box');
             const optionsList = document.querySelector('.options-list');
@@ -504,12 +503,11 @@
             });
         }
 
-        // Modificado para incluir el temporizador de 2 segundos del widget de Discord
+        // Se unificó la carga conservando tus funciones y añadiendo el temporizador de 2s para Discord
         window.onload = () => { 
             applyTheme(localStorage.getItem('theme') || 'dark'); 
             setMainBoxHeight(); 
             
-            // Espera 2 segundos (2000ms) antes de mostrar el icono flotante
             setTimeout(() => {
                 const discordWidget = document.getElementById('discord-widget');
                 if (discordWidget) discordWidget.classList.add('show');
@@ -517,6 +515,10 @@
         };
         
         window.addEventListener('resize', setMainBoxHeight);
+        
+        const body = document.getElementById('mainBody');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
         
         function toggleTheme() {
             const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
