@@ -15,6 +15,30 @@ const supabase = createClient(
     process.env.SUPABASE_KEY
 ); // ← NUEVO
 
+const AUTH_SECRET = 'DGNV_SESSION_2026';
+const AUTH_COOKIE_NAME = 'DGNV_AUTH';
+const AUTH_SIG_NAME = 'DGNV_AUTH_SIG';
+
+function validateAuthCookies(req) {
+    const cookies = (req.headers.cookie || '').split(';').map(c => c.trim()).reduce((acc, pair) => {
+        const [name, ...rest] = pair.split('=');
+        acc[name] = rest.join('=');
+        return acc;
+    }, {});
+    const token = cookies[AUTH_COOKIE_NAME];
+    const sig = cookies[AUTH_SIG_NAME];
+    if (token !== '1' || !sig) return false;
+
+    let hash = 0;
+    const text = token + AUTH_SECRET;
+    for (let i = 0; i < text.length; i++) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(i);
+        hash |= 0;
+    }
+    const expected = (hash >>> 0).toString(36);
+    return sig === expected;
+}
+
 // 2. Lee el puerto desde .env o usa el 80 por defecto si no lo encuentra
 const PORT = process.env.PORT || 80; 
 const HOST = 'localhost';
