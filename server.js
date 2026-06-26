@@ -7,6 +7,13 @@ const geoip = require('geoip-lite');
 const app = express();
 const https = require('https');
 const querystring = require('querystring');
+const { createClient } = require('@supabase/supabase-js'); // ← NUEVO
+
+// Cliente de Supabase (usa variables de entorno)
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+); // ← NUEVO
 
 // 2. Lee el puerto desde .env o usa el 80 por defecto si no lo encuentra
 const PORT = process.env.PORT || 80; 
@@ -16,11 +23,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const LOG_FILE = path.join(__dirname, 'debug.log');
-const COMENTARIOS_FILE = path.join(__dirname, 'comentarios.json');
 
-if (!fs.existsSync(COMENTARIOS_FILE)) {
-    fs.writeFileSync(COMENTARIOS_FILE, '[]');
-}
+// YA NO SE NECESITA: COMENTARIOS_FILE ni el if de fs.existsSync
 
 function logger(message, req = null) {
     const now = new Date();
@@ -71,24 +75,26 @@ app.use((req, res, next) => {
     next();
 });
 
-// 2. API de Comentarios
-app.get('/api/comentarios', (req, res) => {
+// 2. API de Comentarios ← MODIFICADO para usar Supabase
+app.get('/api/comentarios', async (req, res) => {
     try {
-        const data = fs.readFileSync(COMENTARIOS_FILE, 'utf8');
-        const comentarios = JSON.parse(data);
-        const publicos = comentarios.map(({ ip, ...resto }) => resto);
-        res.json(publicos);
+        const { data, error } = await supabase
+            .from('comentarios')
+            .select('usuario, texto, fecha, pais')
+            .order('id', { ascending: true });
+
+        if (error) throw error;
+        res.json(data);
     } catch (err) {
         res.json([]);
     }
 });
 
-app.post('/api/comentarios', (req, res) => {
+app.post('/api/comentarios', async (req, res) => {
     const { usuario, texto } = req.body;
     if (!usuario || !texto) return res.json({ success: false });
 
     try {
-        const data = JSON.parse(fs.readFileSync(COMENTARIOS_FILE, 'utf8'));
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         const ipLimpia = ip.replace('::ffff:', '').replace('::1', '127.0.0.1');
         const geo = geoip.lookup(ipLimpia);
@@ -98,12 +104,15 @@ app.post('/api/comentarios', (req, res) => {
             usuario,
             texto,
             fecha: new Date().toLocaleString('es-CL'),
-            pais: pais,
-            ip: ipLimpia 
+            pais,
+            ip: ipLimpia
         };
 
-        data.push(nuevoPost);
-        fs.writeFileSync(COMENTARIOS_FILE, JSON.stringify(data, null, 2));
+        const { error } = await supabase
+            .from('comentarios')
+            .insert([nuevoPost]);
+
+        if (error) throw error;
         logger(`COMENTARIO | Usuario: "${usuario}" | País: ${pais.toUpperCase()}`, req);
         res.json({ success: true });
     } catch (err) {
