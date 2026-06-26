@@ -166,6 +166,49 @@
             word-wrap: break-word;
         }
 
+        .reply-post {
+            margin-left: 24px;
+            border-left: 4px solid #8b949e;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .actions {
+            margin-top: 14px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .reply-toggle {
+            background: transparent;
+            border: 1px solid var(--orange-main);
+            color: var(--orange-main);
+            padding: 10px 14px;
+            font-size: 0.65rem;
+            width: auto;
+            border-radius: 8px;
+            box-shadow: none;
+        }
+
+        .reply-area {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .reply-area.active {
+            display: flex;
+        }
+
+        .reply-area textarea {
+            min-height: 80px;
+        }
+
+        .reply-area button {
+            max-width: 220px;
+            align-self: flex-end;
+        }
+
         /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
             h2 { font-size: 0.9rem; }
@@ -258,28 +301,65 @@
                     return;
                 }
 
-                feed.innerHTML = comments.reverse().map(c => `
-                    <div class="post">
+                const commentsById = new Map();
+                comments.forEach(c => {
+                    c.replies = [];
+                    commentsById.set(c.id, c);
+                });
+
+                const rootComments = [];
+                comments.forEach(c => {
+                    if (c.parent_id && commentsById.has(c.parent_id)) {
+                        commentsById.get(c.parent_id).replies.push(c);
+                    } else {
+                        rootComments.push(c);
+                    }
+                });
+
+                const renderComment = (comment, level = 0) => `
+                    <div class="post${level ? ' reply-post' : ''}">
                         <div class="post-header">
                             <div class="user-info">
-                                <span class="user">${c.usuario}</span>
-                                <img src="https://flagcdn.com/w40/${c.pais}.png" 
+                                <span class="user">${comment.usuario}</span>
+                                <img src="https://flagcdn.com/w40/${comment.pais}.png" 
                                      class="flag" 
-                                     alt="Pais: ${c.pais}">
+                                     alt="Pais: ${comment.pais}">
                             </div>
-                            <span class="date">${c.fecha}</span>
+                            <span class="date">${comment.fecha}</span>
                         </div>
-                        <div class="content">${c.texto}</div>
+                        <div class="content">${comment.texto}</div>
+                        <div class="actions">
+                            <button class="reply-toggle" onclick="toggleReplyForm(${comment.id})">RESPONDER</button>
+                        </div>
+                        <div id="reply-area-${comment.id}" class="reply-area">
+                            <textarea id="reply-text-${comment.id}" rows="3" placeholder="Escribe tu respuesta..." maxlength="250"></textarea>
+                            <button onclick="postComment(${comment.id})">Responder</button>
+                        </div>
+                        ${comment.replies.map(reply => renderComment(reply, level + 1)).join('')}
                     </div>
-                `).join('');
+                `;
+
+                feed.innerHTML = rootComments.reverse().map(comment => renderComment(comment)).join('');
             } catch (err) {
-                console.error("Error al sincronizar con el foro");
+                console.error("Error al sincronizar con el foro", err);
             }
         }
 
-        async function postComment() {
+        function toggleReplyForm(commentId) {
+            const area = document.getElementById(`reply-area-${commentId}`);
+            if (!area) return;
+            area.classList.toggle('active');
+        }
+
+        async function postComment(parentId = null) {
             const usuario = document.getElementById('username').value.trim();
-            const texto = document.getElementById('commentText').value.trim();
+            let texto = '';
+
+            if (parentId) {
+                texto = document.getElementById(`reply-text-${parentId}`).value.trim();
+            } else {
+                texto = document.getElementById('commentText').value.trim();
+            }
 
             if (!usuario || !texto) {
                 alert("SISTEMA: Error. Campos incompletos.");
@@ -292,11 +372,15 @@
                 const response = await fetch('/api/comentarios', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, texto })
+                    body: JSON.stringify({ usuario, texto, parent_id: parentId })
                 });
 
                 if (response.ok) {
-                    document.getElementById('commentText').value = '';
+                    if (!parentId) {
+                        document.getElementById('commentText').value = '';
+                    } else {
+                        document.getElementById(`reply-text-${parentId}`).value = '';
+                    }
                     loadComments();
                 }
             } catch (err) {

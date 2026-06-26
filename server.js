@@ -78,7 +78,7 @@ app.get('/api/comentarios', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('comentarios')
-            .select('usuario, texto, fecha, pais')
+            .select('id, usuario, texto, fecha, pais, parent_id')
             .order('id', { ascending: true });
 
         if (error) throw error;
@@ -90,7 +90,7 @@ app.get('/api/comentarios', async (req, res) => {
 });
 
 app.post('/api/comentarios', async (req, res) => {
-    const { usuario, texto } = req.body;
+    const { usuario, texto, parent_id } = req.body;
     if (!usuario || !texto) return res.json({ success: false, error: 'Campos incompletos' });
 
     try {
@@ -102,9 +102,10 @@ app.post('/api/comentarios', async (req, res) => {
         const nuevoPost = {
             usuario,
             texto,
-            fecha: new Date().toISOString(), // ← Cambiado a formato ISO universal para evitar fallos en PostgreSQL
+            fecha: new Date().toISOString(),
             pais,
-            ip: ipLimpia
+            ip: ipLimpia,
+            parent_id: parent_id || null
         };
 
         const { error } = await supabase
@@ -113,7 +114,8 @@ app.post('/api/comentarios', async (req, res) => {
 
         if (error) throw error;
         
-        logger(`COMENTARIO | Usuario: "${usuario}" | País: ${pais.toUpperCase()}`, req);
+        const tipo = parent_id ? 'RESPUESTA' : 'COMENTARIO';
+        logger(`${tipo} | Usuario: "${usuario}" | País: ${pais.toUpperCase()} | Parent: ${parent_id || 'N/A'}`, req);
         res.json({ success: true });
     } catch (err) {
         console.error("❌ ERROR AL GUARDAR COMENTARIO EN SUPABASE:", err.message || err);
