@@ -18,22 +18,28 @@
 
         body.dark {
             --bg: #0a0c10;
-            --card: rgba(22, 27, 34, 0.88);
-            --text: #f0f6fc;
+            --card: rgba(12, 18, 26, 0.92);
+            --text: #cbd5e1;
             --text-dim: #8b949e;
             --border: rgba(255, 255, 255, 0.12);
-            --input-bg: rgba(0, 0, 0, 0.3);
+            --input-bg: rgba(7, 11, 16, 0.82);
             --tooltip-bg: rgba(22, 27, 34, 0.98);
+            --terminal-bg: #071014;
+            --terminal-text: #d5e3f0;
+            --prompt-color: #7dd3fc;
         }
 
         body.light {
-            --bg: #f6f8fa;
-            --card: rgba(255, 255, 255, 0.95);
+            --bg: #eef2f8;
+            --card: rgba(255, 255, 255, 0.94);
             --text: #1f2328;
-            --text-dim: #636c76;
-            --border: rgba(0, 0, 0, 0.1);
-            --input-bg: #ffffff;
+            --text-dim: #64748b;
+            --border: rgba(15, 23, 42, 0.12);
+            --input-bg: #f8fafc;
             --tooltip-bg: rgba(255, 255, 255, 0.98);
+            --terminal-bg: #ffffff;
+            --terminal-text: #141a24;
+            --prompt-color: #0f172a;
         }
 
         * {
@@ -129,17 +135,18 @@
         }
 
         .terminal-output {
-            background: rgba(0, 0, 0, 0.42);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--terminal-bg);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 16px;
-            min-height: 340px;
+            min-height: 360px;
             padding: 22px;
             overflow-y: auto;
             font-family: 'Roboto Mono', monospace;
             font-size: 0.95rem;
-            line-height: 1.5;
-            color: #d2d7e0;
+            line-height: 1.55;
+            color: var(--terminal-text);
             white-space: pre-wrap;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 18px 38px rgba(0, 0, 0, 0.18);
         }
 
         .terminal-input-row {
@@ -149,9 +156,44 @@
             align-items: center;
         }
 
+        .host-settings {
+            display: grid;
+            gap: 10px;
+        }
+
+        .host-settings label {
+            display: block;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+        }
+
+        .host-settings-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn-save {
+            background: var(--orange-main);
+            color: #ffffff;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-save:hover {
+            opacity: 0.92;
+        }
+
         .prompt {
             font-family: 'Roboto Mono', monospace;
-            color: #7dd3fc;
+            color: var(--prompt-color);
             font-size: 0.95rem;
             white-space: nowrap;
         }
@@ -159,10 +201,10 @@
         .command-input {
             width: 100%;
             padding: 14px 18px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             background: var(--input-bg);
-            color: var(--text);
+            color: var(--terminal-text);
             font-size: 0.95rem;
             font-family: 'Roboto Mono', monospace;
             outline: none;
@@ -173,8 +215,27 @@
         }
 
         .command-input:focus {
-            border-color: var(--orange-main);
-            box-shadow: 0 0 0 3px rgba(255, 123, 0, 0.12);
+            border-color: rgba(125, 211, 252, 0.55);
+            box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.14);
+        }
+
+        @media (max-width: 720px) {
+            .terminal-input-row {
+                grid-template-columns: 1fr;
+            }
+
+            .prompt {
+                width: 100%;
+            }
+
+            .host-settings-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-save {
+                width: 100%;
+            }
         }
 
         .status,
@@ -238,6 +299,13 @@
             return cookie ? cookie.split('=')[1] : '';
         }
 
+        function setCookie(name, value, days = 365) {
+            const date = new Date();
+            date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+            const secure = location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = `${name}=${value}; path=/; SameSite=Strict${secure}; expires=${date.toUTCString()}`;
+        }
+
         function signAuth(value) {
             let hash = 0;
             const text = value + AUTH_SECRET;
@@ -276,8 +344,16 @@
             <div class="terminal-output" id="output" aria-live="polite"></div>
 
             <div class="terminal-input-row">
-                <div class="prompt">[root@centos10 ~]#</div>
+                <div class="prompt" id="promptLabel">[root@centos10 ~]#</div>
                 <input id="commandInput" class="command-input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Escribe ipconfig y presiona Enter" />
+            </div>
+
+            <div class="host-settings">
+                <label for="hostNameInput">Nombre de host</label>
+                <div class="host-settings-row">
+                    <input id="hostNameInput" class="command-input" type="text" maxlength="20" placeholder="centos10" />
+                    <button id="saveHostButton" class="btn-save" type="button">Guardar nombre</button>
+                </div>
             </div>
 
             <div class="status">Comandos habilitados: <span>ipconfig</span></div>
@@ -290,6 +366,9 @@
     <script>
         const outputEl = document.getElementById('output');
         const inputEl = document.getElementById('commandInput');
+        const hostNameInput = document.getElementById('hostNameInput');
+        const saveHostButton = document.getElementById('saveHostButton');
+        let hostName = 'centos10';
 
         const commands = {
             ipconfig: async () => {
@@ -333,13 +412,35 @@ eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
             const command = rawCommand.trim().toLowerCase();
             if (!command) return;
 
-            appendLog(`[root@centos10 ~]# ${rawCommand}`);
+            appendLog(`[root@${hostName} ~]# ${rawCommand}`);
 
             if (commands[command]) {
                 commands[command]();
             } else {
                 appendLog(blockedMessage, 'log-error');
             }
+        }
+
+        function setHostName(name) {
+            hostName = name || 'centos10';
+            document.getElementById('promptLabel').textContent = `[root@${hostName} ~]#`;
+        }
+
+        function loadHostName() {
+            const savedHost = getCookie('DGNV_TERM_HOST');
+            if (savedHost) {
+                setHostName(savedHost);
+                hostNameInput.value = savedHost;
+            } else {
+                hostNameInput.value = hostName;
+            }
+        }
+
+        function saveHostName() {
+            const newHost = hostNameInput.value.trim() || 'centos10';
+            setCookie('DGNV_TERM_HOST', newHost, 365);
+            setHostName(newHost);
+            appendLog(`Nombre de host guardado: ${newHost}`, 'log-success');
         }
 
         inputEl.addEventListener('keydown', (event) => {
@@ -372,10 +473,15 @@ eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 
         window.onload = () => {
             applyTheme(localStorage.getItem('theme') || 'dark');
+            loadHostName();
+            saveHostButton.addEventListener('click', saveHostName);
             document.body.style.opacity = '1';
             inputEl.focus();
-            appendLog('Consola CentOS 10 iniciada. Ejecuta solo el comando ipconfig.');
-            appendLog('Autenticación verificada. Si no estás autenticado, serás redirigido a main.html.');
+            appendLog('Último inicio de sesión: mar jul  1 12:34:56 2026 desde 192.168.0.2');
+            appendLog('CentOS Linux release 10 (K10)');
+            appendLog('Kernel 6.8.0-1.el10.x86_64 on an x86_64');
+            appendLog('');
+            appendLog('Bienvenido a la terminal DGNV. Solo el comando ipconfig está habilitado.');
         };
     </script>
 </body>
