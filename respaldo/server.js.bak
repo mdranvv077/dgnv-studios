@@ -7,8 +7,13 @@ const geoip = require('geoip-lite');
 const app = express();
 const https = require('https');
 const querystring = require('querystring');
+const { createClient } = require('@supabase/supabase-js'); // ← NUEVO
 
-const COMMENTS_FILE = path.join(__dirname, 'data', 'comentarios.json');
+// Cliente de Supabase (usa variables de entorno)
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+); // ← NUEVO
 
 const AUTH_SECRET = 'DGNV_SESSION_2026';
 const AUTH_COOKIE_NAME = 'DGNV_AUTH';
@@ -72,34 +77,6 @@ function getRequestIp(req) {
     return ip.replace('::ffff:', '').replace('::1', '127.0.0.1');
 }
 
-function ensureCommentsStore() {
-    fs.mkdirSync(path.dirname(COMMENTS_FILE), { recursive: true });
-    if (!fs.existsSync(COMMENTS_FILE)) {
-        fs.writeFileSync(COMMENTS_FILE, '[]');
-    }
-}
-
-function loadCommentsStore() {
-    ensureCommentsStore();
-    try {
-        const raw = fs.readFileSync(COMMENTS_FILE, 'utf8');
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-        console.error('❌ ERROR AL LEER EL ARCHIVO DE COMENTARIOS:', err.message || err);
-        return [];
-    }
-}
-
-function saveCommentsStore(comments) {
-    ensureCommentsStore();
-    fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
-}
-
-function nextCommentId(comments) {
-    return comments.reduce((max, comment) => Math.max(max, Number(comment.id) || 0), 0) + 1;
-}
-
 // 1. Registro de navegación y PROTECCIÓN DE RUTAS SECUNDARIAS
 app.use((req, res, next) => {
     const esPagina = req.url === '/' || req.url.endsWith('.html') || !req.url.includes('.');
@@ -124,30 +101,35 @@ app.use((req, res, next) => {
     next();
 });
 
-// 2. API de Comentarios
-app.get('/api/comentarios', (req, res) => {
+// 2. API de Comentarios ← MODIFICADO CON TRASTREO DE ERRORES
+app.get('/api/comentarios', async (req, res) => {
     try {
         const requestIp = getRequestIp(req);
-        const comments = loadCommentsStore()
-            .sort((a, b) => Number(a.id) - Number(b.id))
-            .map(c => ({
-                id: c.id,
-                usuario: c.usuario,
-                texto: c.texto,
-                fecha: c.fecha,
-                pais: c.pais,
-                parent_id: c.parent_id,
-                can_modify: c.ip === requestIp
-            }));
+        const { data, error } = await supabase
+            .from('comentarios')
+            .select('id, usuario, texto, fecha, pais, parent_id, ip')
+            .order('id', { ascending: true });
+
+        if (error) throw error;
+
+        const comments = data.map(c => ({
+            id: c.id,
+            usuario: c.usuario,
+            texto: c.texto,
+            fecha: c.fecha,
+            pais: c.pais,
+            parent_id: c.parent_id,
+            can_modify: c.ip === requestIp
+        }));
 
         res.json(comments);
     } catch (err) {
-        console.error('❌ ERROR AL OBTENER COMENTARIOS:', err.message || err);
+        console.error("❌ ERROR AL OBTENER COMENTARIOS DESDE SUPABASE:", err.message || err);
         res.json([]);
     }
 });
 
-app.post('/api/comentarios', (req, res) => {
+app.post('/api/comentarios', async (req, res) => {
     const { usuario, texto, parent_id } = req.body;
     if (!usuario || !texto) return res.json({ success: false, error: 'Campos incompletos' });
 
@@ -155,10 +137,8 @@ app.post('/api/comentarios', (req, res) => {
         const ip = getRequestIp(req);
         const geo = geoip.lookup(ip);
         const pais = geo ? geo.country.toLowerCase() : 'cl';
-        const comments = loadCommentsStore();
 
         const nuevoPost = {
-            id: nextCommentId(comments),
             usuario,
             texto,
             fecha: new Date().toISOString(),
@@ -167,19 +147,22 @@ app.post('/api/comentarios', (req, res) => {
             parent_id: parent_id || null
         };
 
-        comments.push(nuevoPost);
-        saveCommentsStore(comments);
+        const { error } = await supabase
+            .from('comentarios')
+            .insert([nuevoPost]);
 
+        if (error) throw error;
+        
         const tipo = parent_id ? 'RESPUESTA' : 'COMENTARIO';
         logger(`${tipo} | Usuario: "${usuario}" | País: ${pais.toUpperCase()} | Parent: ${parent_id || 'N/A'}`, req);
         res.json({ success: true });
     } catch (err) {
-        console.error('❌ ERROR AL GUARDAR COMENTARIO:', err.message || err);
+        console.error("❌ ERROR AL GUARDAR COMENTARIO EN SUPABASE:", err.message || err);
         res.json({ success: false, error: err.message || err });
     }
 });
 
-app.put('/api/comentarios/:id', (req, res) => {
+app.put('/api/comentarios/:id', async (req, res) => {
     const { texto } = req.body;
     const commentId = parseInt(req.params.id, 10);
 
@@ -188,45 +171,61 @@ app.put('/api/comentarios/:id', (req, res) => {
 
     try {
         const requestIp = getRequestIp(req);
-        const comments = loadCommentsStore();
-        const existing = comments.find(c => Number(c.id) === commentId);
+        const { data: existing, error: fetchError } = await supabase
+            .from('comentarios')
+            .select('ip')
+            .eq('id', commentId)
+            .single();
 
-        if (!existing) return res.json({ success: false, error: 'Comentario no encontrado' });
+        if (fetchError || !existing) return res.json({ success: false, error: 'Comentario no encontrado' });
         if (existing.ip !== requestIp) return res.json({ success: false, error: 'No autorizado' });
 
-        existing.texto = texto;
-        saveCommentsStore(comments);
+        const { error: updateError } = await supabase
+            .from('comentarios')
+            .update({ texto })
+            .eq('id', commentId);
+
+        if (updateError) throw updateError;
 
         logger(`MODIFICACIÓN | Comentario ${commentId} | IP: ${requestIp}`, req);
         res.json({ success: true });
     } catch (err) {
-        console.error('❌ ERROR AL MODIFICAR COMENTARIO:', err.message || err);
+        console.error('❌ ERROR AL MODIFICAR COMENTARIO EN SUPABASE:', err.message || err);
         res.json({ success: false, error: err.message || err });
     }
 });
 
-app.delete('/api/comentarios/:id', (req, res) => {
+app.delete('/api/comentarios/:id', async (req, res) => {
     const commentId = parseInt(req.params.id, 10);
     if (!commentId) return res.json({ success: false, error: 'ID inválido' });
 
     try {
         const requestIp = getRequestIp(req);
-        const comments = loadCommentsStore();
-        const existing = comments.find(c => Number(c.id) === commentId);
+        const { data: existing, error: fetchError } = await supabase
+            .from('comentarios')
+            .select('ip')
+            .eq('id', commentId)
+            .single();
 
-        if (!existing) return res.json({ success: false, error: 'Comentario no encontrado' });
+        if (fetchError || !existing) return res.json({ success: false, error: 'Comentario no encontrado' });
         if (existing.ip !== requestIp) return res.json({ success: false, error: 'No autorizado' });
 
-        const updatedComments = comments
-            .filter(c => Number(c.id) !== commentId)
-            .map(c => (c.parent_id === commentId ? { ...c, parent_id: null } : c));
+        await supabase
+            .from('comentarios')
+            .update({ parent_id: null })
+            .eq('parent_id', commentId);
 
-        saveCommentsStore(updatedComments);
+        const { error: deleteError } = await supabase
+            .from('comentarios')
+            .delete()
+            .eq('id', commentId);
+
+        if (deleteError) throw deleteError;
 
         logger(`ELIMINACIÓN | Comentario ${commentId} | IP: ${requestIp}`, req);
         res.json({ success: true });
     } catch (err) {
-        console.error('❌ ERROR AL ELIMINAR COMENTARIO:', err.message || err);
+        console.error('❌ ERROR AL ELIMINAR COMENTARIO EN SUPABASE:', err.message || err);
         res.json({ success: false, error: err.message || err });
     }
 });
